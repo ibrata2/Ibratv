@@ -61,7 +61,7 @@ public class IbraNative {
             MainActivity a = (MainActivity) activity;
             if ("mobile".equals(BuildConfig.FLAVOR)) {
                 a.setRequestedOrientation(on ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
-                a.setImmersive(on);
+                a.applyImmersive(on);
             }
         });
     }

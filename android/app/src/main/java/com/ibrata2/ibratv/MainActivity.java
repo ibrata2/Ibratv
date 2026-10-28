@@ -43,16 +43,16 @@ public class MainActivity extends BridgeActivity {
         wv.addJavascriptInterface(nativeBridge, "IbraNative");
         getBridge().setWebViewClient(new IbraWebViewClient(getBridge(), nativeBridge));
 
-        if (!"mobile".equals(BuildConfig.FLAVOR)) setImmersive(true);
+        if (!"mobile".equals(BuildConfig.FLAVOR)) applyImmersive(true);
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus && (!"mobile".equals(BuildConfig.FLAVOR) || nativeBridge.isFullscreen())) setImmersive(true);
+        if (hasFocus && (!"mobile".equals(BuildConfig.FLAVOR) || nativeBridge.isFullscreen())) applyImmersive(true);
     }
 
-    void setImmersive(boolean on) {
+    void applyImmersive(boolean on) {
         View decor = getWindow().getDecorView();
         WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), decor);
         if (on) {
