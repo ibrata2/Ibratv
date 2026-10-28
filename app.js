@@ -33,7 +33,8 @@
 
   /* ================= playlist library ================= */
   const LIBRARY = [
-    { title: "العراق", items: [
+    { title: "المختارات والعراق", items: [
+      { id: "picks", name: "مختارات المشاهد العربي", sub: "العراقية، MBC، الأخبار، الرياضة", urls: [IPTV + "countries/iq.m3u", IPTV + "languages/ara.m3u", IPTV + "regions/arab.m3u", IPTV + "categories/sports.m3u"], icon: "⭐" },
       { id: "iq", name: "قنوات العراق", url: IPTV + "countries/iq.m3u", flag: "iq" }
     ] },
     { title: "عربي", items: [
@@ -57,16 +58,38 @@
     { title: "حسب النوع (من كل العالم)", items: ["news", "sports", "movies", "series", "kids", "animation", "documentary", "music", "religious", "entertainment", "comedy", "cooking", "education", "science", "travel"]
       .map((c) => ({ id: "cat-" + c, name: CAT[c][0], url: IPTV + `categories/${c}.m3u`, icon: CAT[c][1] })) }
   ];
-  const DEFAULT_PINS = ["iq", "ara", "arab", "all", "cat-news", "cat-sports", "cat-movies", "cat-series", "cat-kids"];
+  const DEFAULT_PINS = ["picks", "iq", "ara", "arab", "all", "cat-news", "cat-sports", "cat-movies", "cat-series", "cat-kids"];
+
+  /* ================= Arab viewer picks (مختارات المشاهد العربي) =================
+     matched by tvg-id so links stay fresh with every playlist update.
+     "id@feed" pins a specific feed (e.g. Al Jazeera Arabic, not English). */
+  const PICKS = [
+    { key: "mine", name: "قنواتي المضافة", icon: "➕", mine: true },
+    { key: "iraq", name: "القنوات العراقية", flag: "iq", ids: ["AlIraqia.iq", "AlIraqiaNews.iq", "AlIraqiaSport.iq", "Alrabiaa.iq", "AlSharqiya.iq", "AlSharqiyaNews.iq", "MBCIraq.iq", "UTV.iq", "DijlahTV.iq", "INews.iq", "AlRasheedTV.iq", "ShamsTV.iq", "IraqFuture.iq", "AlawlaTV.iq", "SamarraTV.iq", "AlghadeerTV.iq", "AnwarTV2.iq", "AlJanoubTV.iq", "RudawTV.iq", "Kurdistan24.iq", "Kurdsat.iq"] },
+    { key: "mbc", name: "مجموعة MBC", icon: "📺", ids: ["MBC1.ae", "MBCIraq.iq", "MBCDrama.ae", "MBC4.ae", "MBC5.ae", "MBCMasr.eg", "MBCMasr2.eg", "MBCMasrDrama.sa", "MBC1Egypt.eg", "MBCPlusDrama.sa", "MBCBollywood.ae", "MBC3USA.us", "MBCDramaUSA.us", "MBCFM.ae"] },
+    { key: "news", name: "الأخبار العربية", icon: "📰", ids: ["AlJazeera.qa@arabic", "AlJazeeraMubasher.qa", "Alarabiya.ae", "SkyNewsArabia.ae@hd", "AsharqNews.sa", "AlIraqiaNews.iq", "AlSharqiyaNews.iq", "BBCArabic.uk", "France24.fr@arabic", "AlEkhbariya.sa", "TRTArabi.tr", "AlGhadTV.eg", "AlMayadeenTV.lb", "CNBCArabiya.ae", "AlArabiyaBusiness.ae", "CGTNArabic.cn", "Medi1TVArabic.ma"] },
+    { key: "variety", name: "منوعات ودراما عربية", icon: "🎭", ids: ["DubaiTVInternational.ae", "RoyaTV.jo", "QatarTelevision.qa", "LBCInternational.lb", "MTVLebanon.lb", "AlJadeed.lb", "Maraya.sa", "AlSharqiyaMinKabla.ae", "RotanaDrama.sa", "RotanaCinemaKSA.sa", "RotanaCinemaEgypt.eg", "RotanaComedy.sa", "RotanaClassic.sa", "RotanaKhalijia.sa", "NileDrama.eg", "iFilmArabic.ir", "2M.ma", "ElWatania1.tn", "AsharqDocumentary.sa", "AlJazeeraDocumentary.qa"] },
+    { key: "sports", name: "الرياضة", icon: "⚽", ids: ["AlIraqiaSport.iq", "Alrabiaa.iq", "beINSPORTSXTRA.us", "SharjahSports.ae", "JordanSport.jo", "OmanSportsTV.om", "BahrainSports1.bh", "BahrainSports2.bh", "Prime.sy"], rule: (ch) => ch.cats.includes("sports") && ARAB.includes(ch.cc) },
+    { key: "kids", name: "أطفال", icon: "🧸", ids: ["SpacetoonArabic.ae", "CartoonNetworkArabic.ae", "MBC3USA.us", "AfarinBaxcha.iq"] },
+    { key: "religious", name: "دينية", icon: "🕌", ids: ["Alquran.iq", "QatarTVTheHolyQuran.qa", "ImamHusseinTV1.iq", "AlabbassiaTV.iq", "KarbalaDocumentary.iq", "IqraaArabic.sa", "AlResalah.sa"] }
+  ].map((p) => ({ ...p, ids: (p.ids || []).map((x) => x.toLowerCase()) }));
+  // ready-made favourites for a new Arab viewer (first launch)
+  const SEED_FAVORITES = ["AlIraqia.iq", "AlIraqiaNews.iq", "AlIraqiaSport.iq", "Alrabiaa.iq", "AlSharqiya.iq", "MBCIraq.iq", "UTV.iq", "MBC1.ae", "MBCDrama.ae", "MBC4.ae", "MBCMasr.eg", "AlJazeera.qa@arabic", "Alarabiya.ae", "SkyNewsArabia.ae@hd", "DubaiTVInternational.ae", "SpacetoonArabic.ae", "beINSPORTSXTRA.us", "SharjahSports.ae"].map((x) => x.toLowerCase());
+  // channels not in the free M3U lists: official YouTube live streams
+  const BUILTIN_EXTRA = [
+    { key: "youtube:@alrabiaatv", url: "youtube:@alrabiaatv", name: "الرابعة Alrabiaa", tid: "alrabiaa.iq", feed: "", logo: "", cc: "iq", cats: ["general", "sports"], height: 0, interlaced: false, rc: "", geo: false, not247: false, ua: "", ref: "", yt: true, idx: -1 }
+  ];
+  const EXTRA_SOURCES = ["picks", "iq", "ara", "arab", "mena", "all", "cat-sports"];
 
   /* ================= state ================= */
   const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(P + k)); return v ?? d; } catch { return d; } };
   const save = (k, v) => { try { localStorage.setItem(P + k, JSON.stringify(v)); } catch {} };
 
   const state = {
-    sourceId: load("source", "all"),
+    sourceId: load("v21", false) ? load("source", "picks") : "picks",
+    mine: load("mine", []),
     custom: load("custom", []),
-    pins: load("pins", DEFAULT_PINS),
+    pins: (() => { const p = load("pins", DEFAULT_PINS); if (!load("v21", false) && !p.includes("picks")) p.unshift("picks"); return p; })(),
     channels: [],
     byUrl: new Map(),
     groupBy: load("groupBy", "country"),
@@ -182,8 +205,9 @@
     if (cc === "uk") cc = "gb";
     const cats = (m.group || "Undefined").split(";").map((s) => s.trim().toLowerCase()).filter(Boolean);
     if (cats.includes("xxx")) return null;
+    const [tid, feed = ""] = (m.id || "").toLowerCase().split("@");
     return {
-      key: url, url, name, logo: /^https?:\/\//i.test(m.logo) ? m.logo : "",
+      key: url, url, name, tid, feed, logo: /^https?:\/\//i.test(m.logo) ? m.logo : "",
       cc, cats: cats.length ? cats : ["undefined"], height, interlaced, rc: resClass(height),
       geo, not247, ua: m.ua || "", ref: m.ref || "", idx
     };
@@ -203,6 +227,61 @@
     return { ok: true, text: await res.text(), fromCache: false };
   }
 
+  async function fetchMany(urls, force) {
+    const res = await Promise.allSettled(urls.map((u) => fetchPlaylist(u, force)));
+    const ok = res.filter((x) => x.status === "fulfilled").map((x) => x.value);
+    if (!ok.length) throw new Error(res[0].reason?.message || "تعذّر التحميل");
+    return { ok: true, text: ok.map((r) => r.text).join("\n"), fromCache: ok.every((r) => r.fromCache), offline: ok.some((r) => r.offline), savedAt: Math.min(...ok.map((r) => r.savedAt || Date.now())) };
+  }
+  function withExtras(chans, src) {
+    const have = new Set(chans.map((c) => c.key));
+    const extra = [];
+    if (EXTRA_SOURCES.includes(src.id)) BUILTIN_EXTRA.forEach((c) => { if (!have.has(c.key)) extra.push({ ...c }); });
+    state.mine.forEach((c) => { if (!have.has(c.key)) extra.push({ ...c }); });
+    extra.forEach((c, i) => { c.idx = chans.length + i; });
+    return chans.concat(extra);
+  }
+
+  /* ---- picks ---- */
+  const pickId = (ch) => (ch.tid || "") ;
+  function pickRank(sec, ch) {
+    if (sec.mine) return ch.mine ? 0 : -1;
+    let i = sec.ids.indexOf(pickId(ch) + "@" + (ch.feed || ""));
+    if (i < 0) { i = sec.ids.indexOf(pickId(ch)); if (i >= 0 && sec.ids.some((x) => x.startsWith(pickId(ch) + "@"))) i = -1; }
+    if (i >= 0) return i;
+    if (sec.rule && sec.rule(ch)) return 500;
+    return -1;
+  }
+  function pickList(key) {
+    const sec = PICKS.find((p) => p.key === key);
+    if (!sec) return [];
+    const best = new Map();
+    for (const ch of state.channels) {
+      const r = pickRank(sec, ch);
+      if (r < 0) continue;
+      const id = ch.mine || !ch.tid ? ch.key : ch.tid;
+      const cur = best.get(id);
+      const score = (c) => (c.geo ? 0 : 100000) + (c.not247 ? 0 : 50000) + (c.height || 0);
+      if (!cur || score(ch) > score(cur.ch)) best.set(id, { ch, r });
+    }
+    return [...best.values()].sort((a, b) => a.r - b.r || coll.compare(a.ch.name, b.ch.name)).map((x) => x.ch);
+  }
+  function seedFavorites() {
+    if (load("seededFav", false)) return;
+    const found = [];
+    for (const id of SEED_FAVORITES) {
+      const [t, f] = id.split("@");
+      const cands = state.channels.filter((c) => c.tid === t && (!f || c.feed === f));
+      if (!cands.length) continue;
+      cands.sort((a, b) => (a.geo - b.geo) || (b.height - a.height));
+      found.push(cands[0]);
+    }
+    if (found.length < 5) return;          // wait for a playlist that has them
+    const have = new Set(state.favorites.map((f) => f.key));
+    state.favorites = state.favorites.concat(found.filter((c) => !have.has(c.key)).map(snapshot));
+    save("favorites", state.favorites); save("seededFav", true);
+  }
+
   async function openSource(id, { force = false, keepGroup = false } = {}) {
     const src = findSource(id) || findSource("all");
     const token = ++state.loadToken;
@@ -212,19 +291,21 @@
     $("source-label").textContent = src.name;
     if (!state.channels.length) $("ch-list").innerHTML = `<div class="empty"><div class="ring" style="margin:0 auto 14px"></div><b>جارٍ تحميل القنوات…</b>${esc(src.name)}</div>`;
     try {
-      const r = src.text ? { text: src.text, fromCache: true } : await fetchPlaylist(src.url, force);
+      const r = src.text ? { text: src.text, fromCache: true } : src.urls ? await fetchMany(src.urls, force) : await fetchPlaylist(src.url, force);
       if (token !== state.loadToken) return;
-      const chans = parseM3U(r.text);
+      const chans = withExtras(parseM3U(r.text), src);
       if (!chans.length) throw new Error("القائمة لا تحتوي قنوات صالحة");
       state.channels = chans;
       state.byUrl = new Map(chans.map((c) => [c.key, c]));
       if (!keepGroup) {
         state.group = { type: "special", key: "all" };
         if (state.groupBy === "country" && chans.some((c) => c.cc === "iq") && new Set(chans.map((c) => c.cc)).size > 1) state.group = { type: "country", key: "iq" };
+        if (src.id === "picks") state.group = { type: "pick", key: "iraq" };
       }
       const when = r.savedAt ? new Date(r.savedAt).toLocaleString("ar-IQ", { dateStyle: "short", timeStyle: "short" }) : "";
       status(`${fmt(chans.length)} قناة${r.offline ? " — بدون إنترنت، نسخة محفوظة" : r.fromCache ? " — من النسخة المحفوظة" : ""}`, r.offline ? "err" : "ok");
       $("cache-info").textContent = when ? `آخر تحديث: ${when}` : "—";
+      seedFavorites();
       renderGroups(); renderList(true);
       if (force) toast(`تم تحديث «${src.name}»`);
       afterSourceLoaded(src, r, chans, token);
@@ -250,7 +331,8 @@
   const shortName = (it) => ({ iq: "العراق", ara: "العربية", arab: "الوطن العربي", all: "العالم", gcc: "الخليج" }[it.id] || it.name);
 
   function renderLibrary() {
-    $("library-body").innerHTML = allSources().map((sec) => `
+    const mineHtml = state.mine.length ? `<div class="lib-sec"><h4>قنواتي المضافة</h4><div class="lib-grid">${state.mine.map((c) => `<div class="lib-item"><span class="li-ico">${c.yt ? "▶️" : "📡"}</span><span class="li-txt"><b>${esc(c.name)}</b><small dir="ltr">${esc(c.url.slice(0, 38))}</small></span><span class="del" data-delmine="${esc(c.key)}" title="حذف">🗑</span></div>`).join("")}</div></div>` : "";
+    $("library-body").innerHTML = mineHtml + allSources().map((sec) => `
       <div class="lib-sec"><h4>${esc(sec.title)}</h4><div class="lib-grid">
       ${sec.items.map((it) => `<button class="lib-item ${it.id === state.sourceId ? "on" : ""}" data-source="${esc(it.id)}">
           <span class="li-ico">${srcIcon(it)}</span>
@@ -275,6 +357,14 @@
     return c.toUpperCase() || "#";
   }
 
+  function renderPicks() {
+    const rows = PICKS.map((p) => ({ p, n: pickList(p.key).length })).filter((x) => x.n > 0);
+    $("picks-groups").innerHTML = rows.length ? `<div class="grp-section picks-title">⭐ مختارات المشاهد العربي</div>` + rows.map(({ p, n }) => {
+      const on = state.group?.type === "pick" && state.group.key === p.key;
+      const ico = p.flag ? `<span class="gico"><img src="${flagUrl(p.flag)}" alt=""></span>` : `<span class="gico">${p.icon}</span>`;
+      return `<button class="grp pick ${on ? "on" : ""}" data-pick="${p.key}">${ico}<span class="gname">${esc(p.name)}</span><b>${fmt(n)}</b></button>`;
+    }).join("") : "";
+  }
   function renderGroups() {
     const counts = new Map();
     for (const ch of state.channels) for (const k of groupKeysOf(ch)) counts.set(k, (counts.get(k) || 0) + 1);
@@ -289,6 +379,7 @@
       else ico = `<span class="gico letter">${esc(k)}</span>`;
       return `<button class="grp ${isOn(k) ? "on" : ""}" data-group="${esc(k)}">${ico}<span class="gname">${esc(label(k))}</span><b>${fmt(n)}</b></button>`;
     };
+    renderPicks();
     let html = "";
     if (state.groupBy === "country") {
       const iq = entries.filter(([k]) => k === "iq");
@@ -316,14 +407,15 @@
   /* ================= channel list ================= */
   const isFav = (key) => state.favorites.some((f) => f.key === key);
   function snapshot(ch) {
-    const { key, url, name, logo, cc, cats, height, interlaced, rc, geo, not247, ua, ref } = ch;
-    return { key, url, name, logo, cc, cats, height, interlaced, rc, geo, not247, ua, ref };
+    const { key, url, name, tid, feed, logo, cc, cats, height, interlaced, rc, geo, not247, ua, ref, yt, mine } = ch;
+    return { key, url, name, tid, feed, logo, cc, cats, height, interlaced, rc, geo, not247, ua, ref, yt, mine };
   }
 
   function computeList() {
     const g = state.group || { type: "special", key: "all" };
     let list;
-    if (g.type === "special" && g.key === "fav") list = state.favorites.map((f) => state.byUrl.get(f.key) || f);
+    if (g.type === "pick") list = pickList(g.key);
+    else if (g.type === "special" && g.key === "fav") list = state.favorites.map((f) => state.byUrl.get(f.key) || f);
     else if (g.type === "special" && g.key === "recent") list = state.recent.map((f) => state.byUrl.get(f.key) || f);
     else if (g.type === "special") list = state.channels.slice();
     else {
@@ -339,7 +431,7 @@
     }
     if (state.res !== "all") list = list.filter((ch) => ch.rc === state.res);
     if (state.hideLimited) list = list.filter((ch) => !ch.geo && !ch.not247);
-    const keepOrder = g.type === "special" && (g.key === "recent" || g.key === "fav") && state.sort === "playlist";
+    const keepOrder = (g.type === "special" && (g.key === "recent" || g.key === "fav") && state.sort === "playlist") || (g.type === "pick" && state.sort !== "quality" && !q);
     if (!keepOrder) {
       if (state.sort === "name") list.sort((a, b) => coll.compare(a.name, b.name));
       else if (state.sort === "quality") list.sort((a, b) => b.height - a.height || coll.compare(a.name, b.name));
@@ -352,6 +444,7 @@
     const g = state.group || { type: "special", key: "all" };
     if (state.query) return `نتائج «${state.query}»`;
     if (g.type === "special") return { all: "كل القنوات", fav: "المفضلة", recent: "شاهدتها مؤخراً" }[g.key];
+    if (g.type === "pick") return PICKS.find((p) => p.key === g.key)?.name || "المختارات";
     if (g.type === "country") return countryName(g.key === "--" ? "" : g.key);
     if (g.type === "category") return CAT[g.key] ? CAT[g.key][0] : g.key;
     return `حرف ${g.key}`;
@@ -367,7 +460,7 @@
       <span class="num">${playing ? "▶" : i + 1}</span>
       ${logoHTML(ch)}
       <div class="info"><div class="nm" title="${esc(ch.name)}">${esc(ch.name)}</div><div class="sub">${flag}${flag && cats ? " · " : ""}${esc(cats)} ${warn}</div></div>
-      <span class="badge ${ch.rc === "4k" ? "r4k" : ch.rc || "none"}" title="${ch.rc ? RES_LABEL[ch.rc] : "الدقة غير معروفة"}">${ch.rc ? ch.height + (ch.interlaced ? "i" : "p") : "—"}</span>
+      ${ch.yt ? `<span class="badge yt" title="بث مباشر رسمي على يوتيوب">YouTube</span>` : `<span class="badge ${ch.rc === "4k" ? "r4k" : ch.rc || "none"}" title="${ch.rc ? RES_LABEL[ch.rc] : "الدقة غير معروفة"}">${ch.rc ? ch.height + (ch.interlaced ? "i" : "p") : "—"}</span>`}
       <button class="star-btn ${isFav(ch.key) ? "on" : ""}" data-fav="${i}" title="المفضلة">★</button>
     </div>`;
   }
@@ -383,7 +476,9 @@
       const g = state.group || {};
       box.innerHTML = `<div class="empty"><b>${g.key === "fav" ? "لا توجد قنوات مفضلة بعد" : g.key === "recent" ? "لم تشاهد أي قناة بعد" : "ما لقينا قنوات"}</b>${g.key === "fav" ? "اضغط ★ بجانب أي قناة لإضافتها" : "جرّب تغيير الفلاتر أو البحث"}</div>`;
     } else {
-      box.innerHTML = state.list.slice(0, state.rendered).map(rowHTML).join("") + moreHint();
+      const note = state.group?.type === "pick" && state.group.key === "sports" && !state.query
+        ? `<div class="info-row">⚽ beIN SPORTS العربية قنوات مدفوعة ومشفّرة وما موجودة بالقوائم المجانية — الموجود هنا beIN SPORTS XTRA المجانية. إذا عندك اشتراك أضف رابطك من «القوائم ← إضافة قناة».</div>` : "";
+      box.innerHTML = note + state.list.slice(0, state.rendered).map(rowHTML).join("") + moreHint();
     }
     if (resetScroll) box.scrollTop = 0;
     renderGroupsCountsOnly();
@@ -453,6 +548,7 @@
     } catch {}
     video.removeAttribute("src");
     try { video.load(); } catch {}
+    const f = $("yt"); if (f && !f.classList.contains("hidden")) { f.src = "about:blank"; f.classList.add("hidden"); }
     $("quality").classList.add("hidden");
     $("res-now").textContent = "";
   }
@@ -489,6 +585,7 @@
     if (native) { try { await native.setStreamHeaders({ url: ch.url, userAgent: ch.ua, referrer: ch.ref }); } catch {} }
     if (state.current !== ch) return;
 
+    if (ch.url.startsWith("youtube:")) { playYouTube(ch); return; }
     const url = ch.url;
     const path = url.split("?")[0].toLowerCase();
     stallTimer = setTimeout(() => { if (state.current === ch && video.readyState < 2) fail(ch, "انتهت مهلة الاتصال بالبث"); }, 25000);
@@ -528,6 +625,27 @@
     } catch (err) {
       fail(ch, "خطأ في المشغّل: " + err.message);
     }
+  }
+  async function playYouTube(ch) {
+    const target = ch.url.slice(8);
+    let id = target.startsWith("v=") ? target.slice(2) : "";
+    if (!id) {
+      if (!native?.youtubeLive) { fail(ch, "قنوات يوتيوب المباشرة تعمل في نسخة الويندوز"); return; }
+      showMsg("جارٍ البحث عن البث المباشر على يوتيوب…");
+      const r = await native.youtubeLive(target).catch(() => ({ ok: false }));
+      if (state.current !== ch) return;
+      if (!r.ok) { fail(ch, r.reason === "offline" ? "القناة لا تبث مباشر على يوتيوب الآن — جرّب بعد شوي" : "تعذّر الوصول لبث يوتيوب"); return; }
+      id = r.id;
+    }
+    clearTimeout(stallTimer);
+    state.engine = { type: "youtube" };
+    const f = $("yt");
+    f.src = `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&playsinline=1&hl=ar`;
+    f.classList.remove("hidden");
+    hideMsg();
+    $("live-tag").classList.remove("hidden");
+    $("res-now").textContent = "YouTube Live";
+    status(`يعمل الآن: ${ch.name} (يوتيوب)`, "ok");
   }
   function playNative(ch) {
     state.engine = { type: "native" };
@@ -636,6 +754,16 @@
       $("group-filter").value = "";
       renderGroups(); renderList(true); return;
     }
+    const pk = e.target.closest("[data-pick]");
+    if (pk) { state.group = { type: "pick", key: pk.dataset.pick }; clearSearch(); renderGroups(); renderList(true); return; }
+    const dm = e.target.closest("[data-delmine]");
+    if (dm) {
+      e.stopPropagation();
+      state.mine = state.mine.filter((c) => c.key !== dm.dataset.delmine); save("mine", state.mine);
+      state.channels = state.channels.filter((c) => !(c.mine && c.key === dm.dataset.delmine));
+      state.byUrl.delete(dm.dataset.delmine);
+      renderLibrary(); renderGroups(); renderList(false); toast("تم حذف القناة"); return;
+    }
     const sp = e.target.closest("[data-special]");
     if (sp) { state.group = { type: "special", key: sp.dataset.special }; clearSearch(); renderGroups(); renderList(true); return; }
     const gr = e.target.closest("[data-group]");
@@ -702,6 +830,7 @@
     if (video.paused) video.play().catch(() => {}); else video.pause();
   }
   function toggleFullscreen() {
+    if (state.engine?.type === "youtube" && !document.fullscreenElement) { $("screen").requestFullscreen?.().catch(() => {}); return; }
     if (document.fullscreenElement) document.exitFullscreen?.();
     else $("screen").requestFullscreen?.().catch(() => {});
   }
@@ -747,6 +876,31 @@
     save("custom", state.custom); save("pins", state.pins);
     $("custom-url").value = ""; $("custom-name").value = "";
     closeModals(); openSource(id);
+  });
+  function normalizeChannelUrl(u) {
+    u = u.trim();
+    let m = u.match(/youtube\.com\/(@[\w.\-]+)/i);
+    if (m) return "youtube:" + m[1];
+    m = u.match(/(?:youtube\.com\/(?:watch\?v=|live\/|embed\/)|youtu\.be\/)([\w-]{11})/i);
+    if (m) return "youtube:v=" + m[1];
+    return u;
+  }
+  $("mine-save").addEventListener("click", () => {
+    const name = $("mine-name").value.trim();
+    const url = normalizeChannelUrl($("mine-url").value);
+    const logo = $("mine-logo").value.trim();
+    if (!name) { toast("اكتب اسم القناة", true); return; }
+    if (!/^(https?|rtmp|rtsp):\/\//i.test(url) && !url.startsWith("youtube:")) { toast("الرابط لازم يبدأ بـ http أو يكون رابط يوتيوب", true); return; }
+    const ch = { key: url, url, name, tid: "mine." + Date.now().toString(36), feed: "", logo: /^https?:\/\//i.test(logo) ? logo : "", cc: "", cats: ["undefined"], height: 0, interlaced: false, rc: "", geo: false, not247: false, ua: "", ref: "", yt: url.startsWith("youtube:"), mine: true, idx: state.channels.length };
+    state.mine = state.mine.filter((c) => c.key !== ch.key).concat(ch); save("mine", state.mine);
+    if (!state.byUrl.has(ch.key)) { state.channels.push(ch); state.byUrl.set(ch.key, ch); }
+    if (!isFav(ch.key)) { state.favorites.unshift(snapshot(ch)); save("favorites", state.favorites); }
+    ["mine-name", "mine-url", "mine-logo"].forEach((id) => ($(id).value = ""));
+    closeModals();
+    state.group = { type: "pick", key: "mine" }; clearSearch();
+    renderGroups(); renderList(true);
+    toast(`➕ أُضيفت «${name}» إلى قنواتك والمفضلة`);
+    play(ch);
   });
   $("m3u-file").addEventListener("change", async (e) => {
     const file = e.target.files[0];
@@ -915,6 +1069,7 @@
   document.querySelectorAll(".statusbar .tg").forEach((a) => a.addEventListener("click", (e) => { if (native) { e.preventDefault(); native.openExternal(a.href); } }));
 
   /* ================= start ================= */
+  save("v21", true); save("pins", state.pins);
   if (native) document.body.classList.add("desktop");
   if (native?.acrylic) document.body.classList.add("acrylic");
   applySettings();

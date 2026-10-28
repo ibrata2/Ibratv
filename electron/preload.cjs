@@ -13,5 +13,6 @@ contextBridge.exposeInMainWorld("ibratvNative", {
   checkUpdate: () => ipcRenderer.invoke("ibratv:check-update"),
   downloadUpdate: (info) => ipcRenderer.invoke("ibratv:download-update", info),
   installUpdate: () => ipcRenderer.invoke("ibratv:install-update"),
+  youtubeLive: (handle) => ipcRenderer.invoke("ibratv:youtube-live", handle),
   onUpdateProgress: (cb) => ipcRenderer.on("ibratv:update-progress", (_e, p) => cb(p))
 });

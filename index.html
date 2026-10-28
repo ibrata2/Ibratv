@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#1a0509" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src * data: blob:; media-src * blob: data:; connect-src *; worker-src 'self' blob:;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src * data: blob:; media-src * blob: data:; connect-src *; worker-src 'self' blob:; frame-src https://www.youtube.com https://www.youtube-nocookie.com;" />
   <title>IBRATV</title>
   <link rel="icon" href="logo-small.png" type="image/png" />
   <link rel="stylesheet" href="styles.css" />
@@ -44,6 +44,7 @@
         <button data-groupby="category">النوع</button>
         <button data-groupby="name">الاسم</button>
       </div>
+      <div class="picks" id="picks-groups"></div>
       <div class="fixed-groups">
         <button class="grp" data-special="all"><span class="gico">▦</span><span class="gname">كل القنوات</span><b id="cnt-all">0</b></button>
         <button class="grp" data-special="fav"><span class="gico star">★</span><span class="gname">المفضلة</span><b id="cnt-fav">0</b></button>
@@ -80,6 +81,7 @@
     <section class="panel player glass">
       <div class="screen" id="screen">
         <video id="video" playsinline></video>
+        <iframe id="yt" class="hidden" title="YouTube" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
         <div class="screen-idle" id="screen-idle">
           <img src="logo.png" alt="" />
           <p>اختر قناة من القائمة لبدء المشاهدة</p>
@@ -144,6 +146,13 @@
       <div class="sheet-head"><h2>مكتبة القوائم</h2><button class="x" data-close>×</button></div>
       <div class="sheet-body" id="library-body"></div>
       <div class="custom-add">
+        <h4>إضافة قناة (رابط بث m3u8 أو رابط قناة يوتيوب مباشر) — تنضاف للمفضلة</h4>
+        <div class="row">
+          <input id="mine-name" placeholder="اسم القناة" />
+          <input id="mine-url" placeholder="https://…/live.m3u8  أو  youtube.com/@channel" dir="ltr" />
+          <input id="mine-logo" placeholder="رابط اللوجو (اختياري)" dir="ltr" class="logo-in" />
+          <button class="btn" id="mine-save">إضافة قناة</button>
+        </div>
         <h4>إضافة قائمة خاصة (M3U)</h4>
         <div class="row">
           <input id="custom-name" placeholder="اسم القائمة" />

@@ -111,6 +111,25 @@ ipcMain.handle("ibratv:open-external", (_e, url) => {
   if (/^https?:\/\//i.test(url)) shell.openExternal(url);
 });
 
+// Official YouTube live streams (e.g. Alrabiaa): find the current live video of a channel handle
+ipcMain.handle("ibratv:youtube-live", async (_e, handle) => {
+  if (!/^@[\w.\-]{2,60}$/.test(handle)) return { ok: false, reason: "bad-handle" };
+  try {
+    const res = await net.fetch(`https://www.youtube.com/${handle}/live`, {
+      headers: { "User-Agent": DEFAULT_UA, "Accept-Language": "ar,en;q=0.8", Cookie: "SOCS=CAI; CONSENT=YES+1" }, cache: "no-store"
+    });
+    const html = await res.text();
+    const canon = html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})"/);
+    const live = /"isLiveNow":true|"isLive":true/.test(html);
+    if (canon && live) return { ok: true, id: canon[1] };
+    return { ok: false, reason: "offline" };
+  } catch (err) {
+    return { ok: false, reason: "network", error: String(err.message || err) };
+  }
+});
+
+const GOOGLE = /^https:\/\/([^/]*\.)?(youtube\.com|youtube-nocookie\.com|googlevideo\.com|ytimg\.com|google\.com|gstatic\.com|googleapis\.com|doubleclick\.net|ggpht\.com)\//i;
+
 function installNetworkRules() {
   const ses = session.defaultSession;
   const mediaTypes = new Set(["xhr", "media", "other", "fetch"]);
@@ -118,6 +137,11 @@ function installNetworkRules() {
   // Apply channel-specific User-Agent / Referer to stream requests
   ses.webRequest.onBeforeSendHeaders((details, cb) => {
     const headers = details.requestHeaders;
+    if (GOOGLE.test(details.url)) {
+      // YouTube embeds refuse to play without a referrer (error 153) when the app runs from file://
+      if (details.resourceType === "subFrame" && /youtube(-nocookie)?\.com\/embed\//.test(details.url)) headers["Referer"] = "https://github.com/ibrata2/ibratv";
+      return cb({ requestHeaders: headers });
+    }
     // Only stream traffic (playlists/segments), never logos or app files
     if (!details.url.startsWith("file:") && mediaTypes.has(details.resourceType) && !/iptv-org\.github\.io/.test(details.url)) {
       if (activeHeaders.userAgent) headers["User-Agent"] = activeHeaders.userAgent;
@@ -131,7 +155,7 @@ function installNetworkRules() {
 
   // Streams rarely send CORS headers — allow them inside the app only.
   ses.webRequest.onHeadersReceived((details, cb) => {
-    if (details.url.startsWith("file:")) return cb({});
+    if (details.url.startsWith("file:") || GOOGLE.test(details.url)) return cb({});
     const h = details.responseHeaders || {};
     for (const k of Object.keys(h)) {
       if (/^access-control-allow-(origin|headers|methods)$/i.test(k)) delete h[k];
