@@ -1,0 +1,27 @@
+name: Publish signed Android APKs
+
+on:
+  push:
+    branches: [release-assets]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace unsigned APKs with the signed ones
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          for f in apk/*.apk; do
+            tag="v$(basename "$f" | sed -E 's/^IBRATV-([0-9.]+)-.*/\1/')"
+            gh release upload "$tag" "$f" --clobber -R "$GITHUB_REPOSITORY"
+            for old in $(gh release view "$tag" -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name | select(endswith("-unsigned.apk"))'); do
+              gh release delete-asset "$tag" "$old" -y -R "$GITHUB_REPOSITORY"
+            done
+          done
+          gh release view "$tag" -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name'
