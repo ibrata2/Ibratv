@@ -354,3 +354,121 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .badge.yt { background: #fff; color: #e00; }
 .groups { overflow-y: auto; }
 .groups .group-list { flex: none; overflow: visible; }
+
+/* =================================================================
+   Device builds — نسخة الموبايل / السيارة / التلفزيون
+   ================================================================= */
+.dev-badge { align-self: center; font-size: 11px; font-weight: 800; color: #ffd9de; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 46, 74, .16); white-space: nowrap; }
+.dev-badge:empty { display: none; }
+html.dev-windows .dev-badge { display: none; }
+.groups-btn { display: none; flex: none; }
+.drawer-shade { position: fixed; inset: 0; z-index: 44; background: rgba(0, 0, 0, .5); backdrop-filter: blur(2px); }
+.screen:focus { outline: 0; }
+
+/* focus ring for TV remotes / car keys */
+html.spatial :is(button, select, input, .ch):focus { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 7px rgba(255, 46, 74, .55); }
+html.spatial .ch:focus { background: rgba(255, 60, 85, .28); }
+html.spatial .screen:focus { box-shadow: 0 0 0 4px #fff, 0 0 0 10px rgba(255, 46, 74, .6); }
+html.spatial .grp:focus { background: var(--row-on); }
+
+/* ---- drawer for groups (phone + car) ---- */
+html.dev-mobile .groups-btn, html.dev-car .groups-btn { display: grid; }
+html.dev-mobile .groups, html.dev-car .groups {
+  position: fixed; top: 0; bottom: 0; right: 0; z-index: 45; width: min(84vw, 360px);
+  border-radius: 20px 0 0 20px; transform: translateX(106%); transition: transform .26s cubic-bezier(.2, .8, .2, 1); --ga: .95;
+}
+html.dev-mobile .groups.open, html.dev-car .groups.open { transform: none; }
+
+/* ---------------- phone ---------------- */
+html.dev-mobile body { grid-template-rows: auto minmax(0, 1fr) 0; }
+html.dev-mobile .statusbar { display: none; }
+html.dev-mobile .topbar { flex-wrap: wrap; height: auto; margin: 6px 6px 0; padding: 8px 10px; gap: 8px; border-radius: 16px; }
+html.dev-mobile .brand-logo { width: 36px; height: 36px; border-radius: 10px; }
+html.dev-mobile .brand-text b { font-size: 18px; }
+html.dev-mobile .brand-text small { display: none; }
+html.dev-mobile .top-tools { flex: 1; min-width: 0; justify-content: flex-end; gap: 6px; }
+html.dev-mobile .search { width: auto; flex: 1; min-width: 0; height: 36px; }
+html.dev-mobile .tbtn { width: 36px; height: 36px; padding: 0; justify-content: center; }
+html.dev-mobile .tbtn span { display: none; }
+html.dev-mobile .sources { order: 5; flex-basis: 100%; padding: 0; }
+html.dev-mobile .src { padding: 6px 12px; font-size: 12.5px; }
+html.dev-mobile .layout { display: flex; flex-direction: column; gap: 8px; padding: 8px 6px 6px; }
+html.dev-mobile .player { order: -1; flex: none; padding: 8px; gap: 6px; }
+html.dev-mobile .screen { flex: none; aspect-ratio: 16 / 9; border-radius: 12px; }
+html.dev-mobile .screen-idle img { width: 70px; border-radius: 16px; }
+html.dev-mobile .screen-idle p { font-size: 14px; }
+html.dev-mobile .screen-idle small { display: none; }
+html.dev-mobile .now { padding: 0 2px; gap: 8px; }
+html.dev-mobile .now-logo { width: 46px; height: 36px; border-radius: 9px; }
+html.dev-mobile .now-info h3 { font-size: 16px; }
+html.dev-mobile .now-meta { font-size: 11px; gap: 4px; max-height: 20px; overflow: hidden; }
+html.dev-mobile .fav-btn { width: 38px; height: 38px; font-size: 19px; }
+html.dev-mobile .controls { padding: 5px 6px; gap: 5px; }
+html.dev-mobile .controls .vol input, html.dev-mobile #pip, html.dev-mobile #copy-link { display: none; }
+html.dev-mobile .cbtn { width: 40px; height: 40px; }
+html.dev-mobile .cbtn.main { width: 46px; height: 46px; }
+html.dev-mobile .res-now { font-size: 11px; }
+html.dev-mobile .channels { flex: 1; min-height: 0; padding: 8px 6px 4px; }
+html.dev-mobile .ch-head { padding: 0 2px 6px; }
+html.dev-mobile .ch-title h2 { font-size: 16px; }
+html.dev-mobile .ch-filters { flex-wrap: wrap; row-gap: 6px; }
+html.dev-mobile .ch { grid-template-columns: 22px 42px 1fr auto auto; padding: 8px 6px; }
+html.dev-mobile .ch .logo { width: 42px; height: 32px; }
+html.dev-mobile .ch .nm { font-size: 14.5px; }
+html.dev-mobile .notice { top: 10px; flex-wrap: wrap; }
+html.dev-mobile .notice-actions { width: 100%; justify-content: flex-end; }
+html.dev-mobile .sheet { width: 96vw; max-height: 92vh; }
+html.dev-mobile .custom-add .row { flex-wrap: wrap; }
+html.dev-mobile .custom-add input { flex-basis: 100% !important; }
+html.dev-mobile .lib-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+@media (orientation: landscape) {
+  html.dev-mobile .layout { flex-direction: row; }
+  html.dev-mobile .player { order: 2; flex: 1.25; min-width: 0; }
+  html.dev-mobile .screen { flex: 1; aspect-ratio: auto; min-height: 0; }
+  html.dev-mobile .channels { flex: 1; }
+  html.dev-mobile .topbar { flex-wrap: nowrap; }
+  html.dev-mobile .sources { order: 0; flex-basis: auto; }
+}
+
+/* ---------------- car head units (any size, always landscape, touch first) ---------------- */
+html.dev-car body { grid-template-rows: 64px minmax(0, 1fr) 0; }
+html.dev-car .statusbar { display: none; }
+html.dev-car .topbar { margin: 6px 6px 0; }
+html.dev-car .brand-text small { display: none; }
+html.dev-car .search { width: 210px; height: 44px; }
+html.dev-car .tbtn { height: 44px; min-width: 44px; }
+html.dev-car .src { padding: 9px 16px; font-size: 14.5px; }
+html.dev-car .layout { grid-template-columns: minmax(340px, 40%) minmax(0, 1fr); padding: 8px 6px 6px; gap: 8px; }
+html.dev-car .ch-head .groups-btn { width: 46px; height: 46px; }
+html.dev-car .chips button { padding: 7px 13px; font-size: 13px; }
+html.dev-car .ch { grid-template-columns: 30px 52px 1fr auto auto; padding: 10px 8px; gap: 11px; }
+html.dev-car .ch .logo { width: 52px; height: 40px; }
+html.dev-car .ch .nm { font-size: 16.5px; }
+html.dev-car .ch .sub { font-size: 12px; }
+html.dev-car .star-btn { font-size: 22px; width: 34px; }
+html.dev-car .grp { padding: 12px 10px; font-size: 15px; }
+html.dev-car .cbtn { width: 54px; height: 54px; border-radius: 14px; }
+html.dev-car .cbtn svg { width: 24px; }
+html.dev-car .cbtn.main { width: 66px; height: 66px; }
+html.dev-car .cbtn.sm { width: 48px; height: 48px; }
+html.dev-car .controls .vol input { width: 120px; height: 6px; }
+html.dev-car .controls #copy-link { display: none; }
+html.dev-car .now-info h3 { font-size: 22px; }
+html.dev-car .fav-btn { width: 52px; height: 52px; font-size: 26px; }
+@media (max-height: 520px) {
+  html.dev-car .now-meta { display: none; }
+  html.dev-car .now-logo { width: 54px; height: 40px; }
+}
+
+/* ---------------- TV & TV box (remote control, 10-foot view) ---------------- */
+html.dev-tv .topbar { margin: 10px 10px 0; }
+html.dev-tv .layout { grid-template-columns: 260px minmax(340px, 430px) minmax(0, 1fr); padding: 12px 10px 8px; }
+html.dev-tv .ch { padding: 9px 8px; }
+html.dev-tv .ch .nm { font-size: 15.5px; }
+html.dev-tv .grp { padding: 9px 10px; font-size: 14.5px; }
+html.dev-tv .cbtn { width: 48px; height: 48px; }
+html.dev-tv .cbtn.main { width: 58px; height: 58px; }
+html.dev-tv #copy-link { display: none; }
+html.dev-tv .blob { animation: none; }       /* save GPU on TV boxes */
+html.android .glass { backdrop-filter: blur(16px) saturate(150%); -webkit-backdrop-filter: blur(16px) saturate(150%); }
+html.android .grain { display: none; }

@@ -1,4 +1,4 @@
-name: Build IBRATV for Windows
+name: Build IBRATV (Windows + Android)
 
 on:
   workflow_dispatch:
@@ -15,6 +15,10 @@ on:
       - "build/**"
       - "package.json"
       - "electron/**"
+      - "android/**"
+      - "android-bridge.js"
+      - "capacitor.config.json"
+      - "scripts/**"
       - "CHANGELOG-latest.md"
       - ".github/workflows/build-windows.yml"
 
@@ -66,3 +70,73 @@ jobs:
           files: |
             dist/IBRATV-${{ steps.ver.outputs.version }}-Setup.exe
             dist/IBRATV-${{ steps.ver.outputs.version }}-portable.exe
+
+  android:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+        run: npm install
+
+      - name: Copy web app into the Android project
+        run: npm run android:sync
+
+      - name: Signing key (if the IBRATV_KEYSTORE_B64 secret is set)
+        env:
+          KS_B64: ${{ secrets.IBRATV_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/ibratv.jks"
+            echo "IBRATV_KEYSTORE=$RUNNER_TEMP/ibratv.jks" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build APKs — Mobile, Car, TV
+        env:
+          IBRATV_KEYSTORE_PASSWORD: ${{ secrets.IBRATV_KEYSTORE_PASSWORD }}
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Collect APKs
+        id: apks
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          mkdir -p out
+          for f in android/app/build/outputs/apk/*/release/*.apk; do
+            name=$(basename "$f")
+            if [ -z "$IBRATV_KEYSTORE" ]; then name="${name%.apk}-unsigned.apk"; fi
+            cp "$f" "out/$name"
+          done
+          ls -la out
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: IBRATV-Android
+          path: out/*.apk
+          retention-days: 14
+
+      - name: Attach APKs to release v${{ steps.apks.outputs.version }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.apks.outputs.version }}
+          overwrite_files: true
+          files: out/*.apk

@@ -17,6 +17,7 @@
     <div class="brand">
       <img src="logo-small.png" alt="IBRATV" class="brand-logo" />
       <div class="brand-text"><b>IBRA<span>TV</span></b><small>YOUR WORLD. YOUR TV.</small></div>
+      <span class="dev-badge" id="dev-badge"></span>
     </div>
 
     <nav class="sources" id="quick-sources" aria-label="القوائم السريعة"></nav>
@@ -57,6 +58,7 @@
     <!-- Channels -->
     <section class="panel channels glass">
       <div class="ch-head">
+        <button class="tbtn icon groups-btn" id="groups-toggle" title="الأقسام"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
         <div class="ch-title"><h2 id="list-title">القنوات</h2><span id="list-count">—</span></div>
         <select id="sort" title="الترتيب">
           <option value="name">الاسم أ ← ي</option>
@@ -192,11 +194,13 @@
     </div>
   </div>
 
+  <div class="drawer-shade hidden" id="drawer-shade"></div>
   <div class="toasts" id="toasts"></div>
 
   <script src="vendor/hls.min.js"></script>
   <script src="vendor/mpegts.js"></script>
   <script src="vendor/dash.all.min.js"></script>
+  <script src="android-bridge.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

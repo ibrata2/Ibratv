@@ -118,6 +118,9 @@
     return null;
   }
 
+  const DEVICE = window.IBRATV_DEVICE || "windows";
+  const SPATIAL = DEVICE === "tv" || DEVICE === "car";   // remote / D-pad / steering-wheel keys
+
   /* ================= helpers ================= */
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmt = (n) => Number(n).toLocaleString("ar-IQ");
@@ -456,7 +459,7 @@
     const flag = ch.cc ? `<img src="${flagUrl(ch.cc)}" alt="">${esc(countryName(ch.cc))}` : "";
     const warn = ch.geo ? `<span class="warn" title="قد تكون محجوبة في بعض الدول">⛔ محجوبة جغرافياً</span>` : ch.not247 ? `<span class="warn" title="لا تبث على مدار الساعة">◔ غير مستمرة</span>` : "";
     const playing = state.current && state.current.key === ch.key;
-    return `<div class="ch ${playing ? "playing" : ""} ${i === state.sel ? "sel" : ""}" data-i="${i}">
+    return `<div class="ch ${playing ? "playing" : ""} ${i === state.sel ? "sel" : ""}" data-i="${i}" tabindex="-1">
       <span class="num">${playing ? "▶" : i + 1}</span>
       ${logoHTML(ch)}
       <div class="info"><div class="nm" title="${esc(ch.name)}">${esc(ch.name)}</div><div class="sub">${flag}${flag && cats ? " · " : ""}${esc(cats)} ${warn}</div></div>
@@ -754,6 +757,7 @@
       $("group-filter").value = "";
       renderGroups(); renderList(true); return;
     }
+    if (e.target.closest("[data-pick], [data-group], [data-special]")) closeDrawer();
     const pk = e.target.closest("[data-pick]");
     if (pk) { state.group = { type: "pick", key: pk.dataset.pick }; clearSearch(); renderGroups(); renderList(true); return; }
     const dm = e.target.closest("[data-delmine]");
@@ -849,9 +853,9 @@
     }
     if (document.querySelector(".modal:not(.hidden)")) return;
     switch (e.key) {
-      case "ArrowDown": e.preventDefault(); select(state.sel + 1); break;
-      case "ArrowUp": e.preventDefault(); select(state.sel - 1); break;
-      case "Enter": if (state.sel >= 0) play(state.list[state.sel]); break;
+      case "ArrowDown": if (SPATIAL) return; e.preventDefault(); select(state.sel + 1); break;
+      case "ArrowUp": if (SPATIAL) return; e.preventDefault(); select(state.sel - 1); break;
+      case "Enter": if (SPATIAL) return; if (state.sel >= 0) play(state.list[state.sel]); break;
       case "PageDown": case "ChannelDown": case "MediaTrackNext": e.preventDefault(); step(1); break;
       case "PageUp": case "ChannelUp": case "MediaTrackPrevious": e.preventDefault(); step(-1); break;
       case " ": case "MediaPlayPause": e.preventDefault(); togglePlay(); break;
@@ -1067,6 +1071,122 @@
   setTimeout(() => checkAppUpdate(false), 4000);
   setInterval(() => checkAppUpdate(false), 6 * 3600e3);
   document.querySelectorAll(".statusbar .tg").forEach((a) => a.addEventListener("click", (e) => { if (native) { e.preventDefault(); native.openExternal(a.href); } }));
+
+  /* ================= device modes (Android phone / car / TV) ================= */
+  const root = document.documentElement;
+  $("dev-badge").textContent = window.IBRATV_DEVICE_LABEL || "";
+  native?.appVersion?.().then((v) => { $("about-ver").textContent = `IBRATV ${v} — ${window.IBRATV_DEVICE_LABEL || ""}`; });
+
+  // TV and car screens come in every size: scale the whole layout to the screen
+  function fitScreen() {
+    let z = 1;
+    if (DEVICE === "tv") z = Math.max(0.5, Math.min(1.6, innerWidth / 1360));
+    else if (DEVICE === "car") z = Math.max(0.62, Math.min(1.7, Math.min(innerHeight / 600, innerWidth / 980)));
+    root.style.zoom = z === 1 ? "" : String(z);
+  }
+  if (DEVICE === "tv" || DEVICE === "car") { fitScreen(); addEventListener("resize", fitScreen); }
+
+  // groups drawer (phone + car)
+  function openDrawer() { document.querySelector(".groups").classList.add("open"); $("drawer-shade").classList.remove("hidden"); }
+  function closeDrawer() { document.querySelector(".groups").classList.remove("open"); $("drawer-shade").classList.add("hidden"); }
+  $("groups-toggle").addEventListener("click", () => (document.querySelector(".groups").classList.contains("open") ? closeDrawer() : openDrawer()));
+  $("drawer-shade").addEventListener("click", closeDrawer);
+
+  // phone: rotate to landscape in fullscreen
+  document.addEventListener("fullscreenchange", () => {
+    const on = !!document.fullscreenElement;
+    native?.setFullscreen?.(on);
+    root.classList.toggle("is-fs", on);
+  });
+
+  /* ---- spatial (D-pad) navigation for TV remotes & car steering keys ---- */
+  const FOCUSABLE = "button:not([disabled]), select, input, [tabindex]";
+  function visible(el) {
+    if (el.closest(".hidden")) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }
+  function scope() {
+    const m = document.querySelector(".modal:not(.hidden)");
+    if (m) return m;
+    if (document.querySelector(".groups.open")) return document.querySelector(".groups");
+    if (!$("notice").classList.contains("hidden") && document.activeElement?.closest("#notice")) return $("notice");
+    return document;
+  }
+  function moveFocus(dir) {
+    const sc = scope();
+    const cur = document.activeElement && document.activeElement !== document.body && sc.contains(document.activeElement) ? document.activeElement : null;
+    const items = [...sc.querySelectorAll(FOCUSABLE)].filter((el) => el !== cur && !el.disabled && el.tabIndex !== -2 && visible(el) && !el.matches("input[type=file], input[type=checkbox]"));
+    if (!cur) { (sc.querySelector(".ch.playing") || sc.querySelector(".ch") || items[0])?.focus(); return; }
+    const a = cur.getBoundingClientRect();
+    const ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+    let best = null, bestScore = Infinity;
+    for (const el of items) {
+      const b = el.getBoundingClientRect();
+      const bx = b.left + b.width / 2, by = b.top + b.height / 2;
+      let main, cross;
+      if (dir === "down") { if (b.top < a.bottom - 2 && by <= ay + 2) continue; main = by - ay; cross = Math.abs(bx - ax); }
+      else if (dir === "up") { if (b.bottom > a.top + 2 && by >= ay - 2) continue; main = ay - by; cross = Math.abs(bx - ax); }
+      else if (dir === "right") { if (b.left < a.right - 2 && bx <= ax + 2) continue; main = bx - ax; cross = Math.abs(by - ay); }
+      else { if (b.right > a.left + 2 && bx >= ax - 2) continue; main = ax - bx; cross = Math.abs(by - ay); }
+      if (main <= 0) continue;
+      const score = main + cross * 3;
+      if (score < bestScore) { bestScore = score; best = el; }
+    }
+    if (best) {
+      best.focus({ preventScroll: false });
+      best.scrollIntoView({ block: "nearest", inline: "nearest" });
+      if (best.classList.contains("ch")) {
+        const i = +best.dataset.i;
+        if (i > state.rendered - 15) renderMore();
+        state.sel = i;
+      }
+    }
+  }
+  if (SPATIAL) {
+    root.classList.add("spatial");
+    $("screen").tabIndex = -1;
+    document.addEventListener("keydown", (e) => {
+      const map = { ArrowDown: "down", ArrowUp: "up", ArrowLeft: "left", ArrowRight: "right" };
+      const el = document.activeElement;
+      if (document.fullscreenElement) {
+        if (e.key === "ArrowUp" || e.key === "ChannelUp") { e.preventDefault(); e.stopImmediatePropagation(); step(-1); return; }
+        if (e.key === "ArrowDown" || e.key === "ChannelDown") { e.preventDefault(); e.stopImmediatePropagation(); step(1); return; }
+        if (e.key === "Enter") { e.preventDefault(); e.stopImmediatePropagation(); if (state.current) showOSD(state.current); return; }
+        return;
+      }
+      if (map[e.key]) {
+        const typing = el && el.tagName === "INPUT" && !["range", "checkbox"].includes(el.type);
+        if (typing && (e.key === "ArrowLeft" || e.key === "ArrowRight")) return;     // move the text caret
+        if (el && el.type === "range" && (e.key === "ArrowLeft" || e.key === "ArrowRight")) return;
+        if (el && el.tagName === "SELECT" && (e.key === "ArrowUp" || e.key === "ArrowDown")) return;
+        e.preventDefault(); e.stopImmediatePropagation();
+        moveFocus(map[e.key]);
+        return;
+      }
+      if (e.key === "Enter" && el) {
+        if (el.classList.contains("ch")) { e.preventDefault(); e.stopImmediatePropagation(); el.click(); return; }
+        if (el.id === "screen") { e.preventDefault(); e.stopImmediatePropagation(); toggleFullscreen(); return; }
+      }
+    }, true);
+    // keep a focus on screen at all times
+    setTimeout(() => { if (!document.activeElement || document.activeElement === document.body) moveFocus("down"); }, 1500);
+  }
+
+  /* ---- Android back button ---- */
+  let lastBack = 0;
+  function handleBack() {
+    if (document.fullscreenElement) { document.exitFullscreen?.(); return; }
+    if (document.querySelector(".modal:not(.hidden)")) { closeModals(); return; }
+    if (document.querySelector(".groups.open")) { closeDrawer(); return; }
+    if (!$("notice").classList.contains("hidden")) { hideNotice(); return; }
+    if (document.activeElement?.id === "search") { document.activeElement.blur(); return; }
+    if (Date.now() - lastBack < 2200) { native?.exitApp?.(); return; }
+    lastBack = Date.now();
+    toast("اضغط رجوع مرة ثانية للخروج");
+  }
+  const capApp = window.Capacitor?.Plugins?.App;
+  if (capApp?.addListener) capApp.addListener("backButton", handleBack);
 
   /* ================= start ================= */
   save("v21", true); save("pins", state.pins);
