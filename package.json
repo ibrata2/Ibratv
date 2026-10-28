@@ -1,9 +1,9 @@
 {
   "name": "ibratv",
-  "version": "1.0.0",
-  "description": "IBRATV glassmorphism IPTV desktop player",
+  "version": "2.0.0",
+  "description": "IBRATV — مشغل تلفزيون مباشر بواجهة زجاجية حمراء",
   "main": "electron/main.cjs",
-  "author": "IBRATV",
+  "author": "Ibrahim Al-Khazraji (IBRAPROGRAM)",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -23,7 +23,12 @@
       "index.html",
       "styles.css",
       "app.js",
+      "logo.png",
+      "logo-small.png",
       "icon.svg",
+      "vendor/**/*",
+      "fonts/**/*",
+      "build/icon.png",
       "electron/**/*",
       "package.json"
     ],
@@ -41,13 +46,22 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "IBRATV",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "${productName}-${version}-Setup.${ext}"
+    },
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
     }
   }
 }

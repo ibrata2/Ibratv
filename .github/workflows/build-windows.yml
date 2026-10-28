@@ -8,13 +8,18 @@ on:
       - "index.html"
       - "styles.css"
       - "app.js"
-      - "icon.svg"
+      - "logo.png"
+      - "logo-small.png"
+      - "vendor/**"
+      - "fonts/**"
+      - "build/**"
       - "package.json"
       - "electron/**"
+      - "CHANGELOG-latest.md"
       - ".github/workflows/build-windows.yml"
 
 permissions:
-  contents: read
+  contents: write   # needed to publish the release the in-app updater reads
 
 jobs:
   build:
@@ -34,10 +39,30 @@ jobs:
       - name: Build Windows installer and portable EXE
         run: npm run dist
 
+      - name: Read version
+        id: ver
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Upload Windows build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: IBRATV-Windows
-          path: dist/*
+          path: |
+            dist/*.exe
+            dist/latest.yml
           if-no-files-found: error
           retention-days: 14
+
+      # The app checks github.com/ibrata2/ibratv/releases/latest and offers the update in-app.
+      - name: Publish release v${{ steps.ver.outputs.version }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: IBRATV ${{ steps.ver.outputs.version }}
+          make_latest: true
+          overwrite_files: true
+          body_path: CHANGELOG-latest.md
+          files: |
+            dist/IBRATV-${{ steps.ver.outputs.version }}-Setup.exe
+            dist/IBRATV-${{ steps.ver.outputs.version }}-portable.exe

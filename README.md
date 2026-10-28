@@ -1,52 +1,47 @@
 # IBRATV
 
-**YOUR WORLD. YOUR TV.** — A responsive, Arabic-first IPTV playlist web player with a dark glassmorphism interface.
+<p align="center"><img src="logo.png" width="180" alt="IBRATV"></p>
 
-## Features
+**مشغّل تلفزيون مباشر لويندوز بواجهة زجاجية حمراء شفافة.**
+برمجة و تطوير **ابراهيم الخزرجي** — تليكرام: [t.me/ibraprogram](https://t.me/ibraprogram)
 
-- Responsive glass UI with Arabic RTL layout.
-- M3U/M3U8 playlist URL input and parsing.
-- Default source: `https://iptv-org.github.io/iptv/index.m3u`
-- Channel search, category filters, sorting, and channel logos.
-- Favorites and recently watched channels stored locally.
-- HLS playback using hls.js where supported, plus native browser playback when available.
-- Glass, dark, and light appearance choices.
-- Local settings for playlist URL and watch history.
-- No build step required; static HTML/CSS/JavaScript.
+## المميزات
 
-## Run locally
+- واجهة زجاج أحمر شفاف (Acrylic حقيقي على ويندوز 11) مع شعار IBRATV، ودرجة شفافية قابلة للتعديل.
+- ترتيب القنوات حسب **الدولة** (العراق أولاً ثم الدول العربية ثم العالم بالأعلام) أو **النوع** (أخبار، أفلام، مسلسلات، رياضة، أطفال…) أو **الاسم**.
+- عرض **دقة** كل قناة عند توفرها (4K / FHD / HD / SD) مع فلتر للدقة، واختيار جودة البث أثناء التشغيل.
+- **لوجو القناة** صغير بجانب اسمها.
+- قوائم جاهزة من IPTV-org: العراق، القنوات العربية، الوطن العربي، الخليج، الشرق الأوسط، كل الدول العربية والجوار، كل قنوات العالم، الإنكليزية، وقوائم حسب النوع — مع إمكانية تثبيت أي قائمة في الشريط العلوي.
+- إضافة رابط M3U خاص أو فتح ملف M3U من الحاسبة.
+- المفضلة وسجل المشاهدة، بحث فوري، وتشغيل آخر قناة عند الفتح.
+- **إشعار بوجود قنوات جديدة** وتطبيقها بضغطة، و**تحديث داخلي للبرنامج** (تنزيل وتثبيت من داخل التطبيق عبر إصدارات GitHub).
+- يشغّل HLS ‏(m3u8) و MPEG-TS/FLV و DASH، ويحترم User-Agent / Referer الخاص بكل قناة.
+- يحفظ نسخة من القوائم ليعمل حتى عند انقطاع الإنترنت المؤقت.
 
-Because browsers may restrict requests from `file://`, serve the folder over HTTP. For example, with Python installed:
+## الاختصارات
+
+| المفتاح | الوظيفة |
+|---|---|
+| ↑ / ↓ | التنقل بين القنوات |
+| Enter | تشغيل القناة |
+| PageUp / PageDown | القناة السابقة / التالية |
+| Space | تشغيل / إيقاف |
+| F | ملء الشاشة |
+| M | كتم الصوت |
+| S | إضافة للمفضلة |
+| / | البحث |
+
+## البناء
 
 ```bash
-python -m http.server 8080
+npm install
+npm start      # تشغيل للتجربة
+npm run dist   # بناء المثبّت والنسخة المحمولة لويندوز
 ```
 
-Then open `http://localhost:8080`.
+كل دفع (push) إلى `main` يبني البرنامج تلقائياً عبر GitHub Actions وينشر إصداراً باسم `v<version>`.
+**لإصدار تحديث جديد:** ارفع رقم `version` في `package.json` واكتب ملاحظات التحديث في `CHANGELOG-latest.md` — البرامج المثبّتة ستُظهر إشعار التحديث وتثبّته داخلياً.
 
-You can also publish this static site with GitHub Pages.
+## ملاحظة
 
-## GitHub Pages deployment
-
-1. Create a repository named `IBRATV` on GitHub.
-2. Upload `index.html`, `styles.css`, `app.js`, and `icon.svg` to the repository root.
-3. Open **Settings → Pages**.
-4. Under build and deployment, choose **Deploy from a branch**.
-5. Select the default branch (usually `main`) and folder `/ (root)`, then save.
-6. Wait for GitHub Pages to publish the site; the Pages section will show the final URL.
-
-## Important limitations
-
-- Playlist loading can fail when the remote source is unavailable or blocks browser requests through CORS. This static project does not include a proxy backend.
-- A URL appearing in an M3U file does not guarantee that the stream is live, authorized, or compatible with the browser.
-- HLS is supported when the stream and browser support it. Other formats may require a different playback engine or native app.
-- Channel metadata and categories are inferred from playlist fields and names; the categorization is approximate.
-- The project does not host or redistribute television streams. Use only playlists and streams you are authorized to access.
-- This is a web app, not a signed native iOS `.ipa` package.
-
-## Files
-
-- `index.html` — app structure and player modal.
-- `styles.css` — responsive glassmorphism UI and themes.
-- `app.js` — playlist parser, state, filtering, favorites, and playback.
-- `icon.svg` — app icon.
+القنوات مأخوذة من مشروع [IPTV-org](https://github.com/iptv-org/iptv) المفتوح. البرنامج لا يستضيف أي بث، وبعض القنوات قد تكون متوقفة أو محجوبة جغرافياً.

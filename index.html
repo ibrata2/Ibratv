@@ -2,99 +2,192 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#07090e" />
-  <meta name="description" content="IBRATV — مشغل IPTV بواجهة زجاجية عصرية." />
-  <title>IBRATV — Your World. Your TV.</title>
-  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1a0509" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src * data: blob:; media-src * blob: data:; connect-src *; worker-src 'self' blob:;" />
+  <title>IBRATV</title>
+  <link rel="icon" href="logo-small.png" type="image/png" />
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
-  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
-  <div class="app-shell">
-    <aside class="sidebar glass-panel" id="sidebar">
-      <a class="brand" href="#home" aria-label="IBRATV الرئيسية">
-        <span class="brand-mark"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M15 9 24 17 33 9"/><rect x="7" y="15" width="34" height="25" rx="8"/><path class="play" d="m21 22 10 5-10 6z"/></svg></span>
-        <span class="brand-copy"><strong>IBRA<span>TV</span></strong><small>YOUR WORLD. YOUR TV.</small></span>
-      </a>
-      <div class="sidebar-label">القائمة الرئيسية</div>
-      <nav class="main-nav" aria-label="التنقل الرئيسي">
-        <button class="nav-item active" data-view="home"><span>⌂</span> الرئيسية</button>
-        <button class="nav-item" data-view="channels"><span>▤</span> كل القنوات <b id="nav-count">—</b></button>
-        <button class="nav-item" data-view="favorites"><span>♡</span> المفضلة</button>
-        <button class="nav-item" data-view="recent"><span>◷</span> شاهدتها مؤخراً</button>
-      </nav>
-      <div class="sidebar-label category-label">التصنيفات</div>
-      <nav id="sidebar-categories" class="category-nav"><div class="nav-placeholder">حمّل قائمة القنوات لعرض التصنيفات</div></nav>
-      <div class="sidebar-bottom">
-        <button class="nav-item" data-view="settings"><span>⚙</span> الإعدادات</button>
-        <div class="sidebar-foot"><span class="status-dot"></span><span id="connection-label">لم يتم تحميل قائمة</span></div>
+  <div class="backdrop" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="grain"></i></div>
+
+  <!-- ===== Title / top bar ===== -->
+  <header class="topbar glass">
+    <div class="brand">
+      <img src="logo-small.png" alt="IBRATV" class="brand-logo" />
+      <div class="brand-text"><b>IBRA<span>TV</span></b><small>YOUR WORLD. YOUR TV.</small></div>
+    </div>
+
+    <nav class="sources" id="quick-sources" aria-label="القوائم السريعة"></nav>
+
+    <div class="top-tools">
+      <label class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="search" type="search" placeholder="ابحث عن قناة…  ( / )" autocomplete="off" />
+      </label>
+      <button class="tbtn" id="open-library" title="مكتبة القوائم">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>القوائم</span>
+      </button>
+      <button class="tbtn icon" id="open-settings" title="الإعدادات">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Main layout ===== -->
+  <main class="layout">
+    <!-- Groups -->
+    <aside class="panel groups glass">
+      <div class="seg" role="tablist" aria-label="ترتيب القنوات">
+        <button data-groupby="country" class="on">الدولة</button>
+        <button data-groupby="category">النوع</button>
+        <button data-groupby="name">الاسم</button>
       </div>
+      <div class="fixed-groups">
+        <button class="grp" data-special="all"><span class="gico">▦</span><span class="gname">كل القنوات</span><b id="cnt-all">0</b></button>
+        <button class="grp" data-special="fav"><span class="gico star">★</span><span class="gname">المفضلة</span><b id="cnt-fav">0</b></button>
+        <button class="grp" data-special="recent"><span class="gico">◷</span><span class="gname">شاهدتها مؤخراً</span><b id="cnt-recent">0</b></button>
+      </div>
+      <input class="group-filter" id="group-filter" placeholder="فلترة القائمة…" />
+      <div class="group-list" id="group-list"></div>
     </aside>
 
-    <main class="main-content" id="home">
-      <header class="topbar">
-        <button class="icon-button mobile-menu" id="mobile-menu" aria-label="فتح القائمة">☰</button>
-        <div class="breadcrumb"><span>IBRATV</span><i>/</i><strong id="page-title">الرئيسية</strong></div>
-        <div class="top-actions">
-          <button class="icon-button" id="top-search-btn" title="بحث" aria-label="بحث">⌕</button>
-          <button class="icon-button" id="refresh-btn" title="تحديث القائمة" aria-label="تحديث القائمة">⟳</button>
-          <button class="profile-chip" id="settings-shortcut"><span class="profile-avatar">I</span><span>المشغّل</span></button>
+    <!-- Channels -->
+    <section class="panel channels glass">
+      <div class="ch-head">
+        <div class="ch-title"><h2 id="list-title">القنوات</h2><span id="list-count">—</span></div>
+        <select id="sort" title="الترتيب">
+          <option value="name">الاسم أ ← ي</option>
+          <option value="quality">الدقة الأعلى أولاً</option>
+          <option value="playlist">ترتيب القائمة</option>
+        </select>
+      </div>
+      <div class="ch-filters">
+        <div class="chips" id="res-chips">
+          <button data-res="all" class="on">الكل</button>
+          <button data-res="4k">4K</button>
+          <button data-res="fhd">FHD</button>
+          <button data-res="hd">HD</button>
+          <button data-res="sd">SD</button>
         </div>
-      </header>
+        <label class="mini-toggle" title="إخفاء القنوات المحجوبة جغرافياً أو غير المستمرة"><input type="checkbox" id="hide-limited" /><span></span>إخفاء المحدودة</label>
+      </div>
+      <div class="ch-list" id="ch-list" tabindex="0"></div>
+    </section>
 
-      <section class="hero glass-panel" id="hero">
-        <div class="hero-content">
-          <div class="eyebrow"><span class="live-pulse"></span> عالمك التلفزيوني بمكان واحد</div>
-          <h1>شاهد عالمك.<br/><span>بطريقتك.</span></h1>
-          <p>قنواتك المفضلة، مرتبة وسهلة الوصول — بتجربة زجاجية أنيقة.</p>
-          <div class="hero-actions">
-            <button class="primary-button" id="hero-load">▶ تحميل قائمة القنوات</button>
-            <button class="secondary-button" id="browse-btn">استكشف القنوات <span>←</span></button>
-          </div>
-          <div class="hero-meta"><span>✦ واجهة عصرية</span><span>•</span><span>قائمة قابلة للتخصيص</span><span>•</span><span>مشغل مدمج</span></div>
+    <!-- Player -->
+    <section class="panel player glass">
+      <div class="screen" id="screen">
+        <video id="video" playsinline></video>
+        <div class="screen-idle" id="screen-idle">
+          <img src="logo.png" alt="" />
+          <p>اختر قناة من القائمة لبدء المشاهدة</p>
+          <small>↑ ↓ للتنقّل • Enter للتشغيل • F ملء الشاشة</small>
         </div>
-        <div class="hero-art" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="hero-tv"><div class="tv-antenna"></div><div class="tv-screen"><span class="tv-play">▶</span><span class="tv-glow"></span></div><div class="tv-stand"></div></div><span class="floating-tag tag-live"><i></i> LIVE STREAM</span><span class="floating-tag tag-hd">HD <small>READY</small></span></div>
-        <div class="hero-glow"></div>
-      </section>
+        <div class="screen-msg hidden" id="screen-msg"><div class="ring"></div><p id="screen-msg-text">جارٍ الاتصال…</p><button class="btn ghost hidden" id="retry">إعادة المحاولة</button></div>
+        <div class="osd hidden" id="osd"></div>
+        <div class="live-tag hidden" id="live-tag"><i></i>مباشر</div>
+      </div>
 
-      <section class="stats-grid" aria-label="ملخص المكتبة">
-        <article class="stat-card glass-panel"><span class="stat-icon red">▤</span><div><small>إجمالي القنوات</small><strong id="stat-total">—</strong></div><span class="stat-note">من القائمة الحالية</span></article>
-        <article class="stat-card glass-panel"><span class="stat-icon pink">♡</span><div><small>قنواتك المفضلة</small><strong id="stat-favorites">0</strong></div><span class="stat-note">محفوظة على جهازك</span></article>
-        <article class="stat-card glass-panel"><span class="stat-icon blue">◷</span><div><small>شوهدت مؤخراً</small><strong id="stat-recent">0</strong></div><span class="stat-note">آخر القنوات المفتوحة</span></article>
-        <article class="stat-card glass-panel"><span class="stat-icon green">◎</span><div><small>حالة القائمة</small><strong id="stat-status" class="status-text">غير محمّلة</strong></div><span class="stat-note">تتحدث عند نجاح التحميل</span></article>
-      </section>
-
-      <section class="content-section" id="featured-section">
-        <div class="section-heading"><div><span class="section-kicker">ابدأ المشاهدة</span><h2>قنوات مميزة</h2></div><button class="text-button" data-view="channels">عرض كل القنوات <span>←</span></button></div>
-        <div id="featured-grid" class="featured-grid"><div class="empty-card glass-panel"><span class="empty-symbol">▤</span><h3>قنواتك بانتظارك</h3><p>حمّل قائمة IPTV حتى تظهر القنوات المتاحة هنا.</p><button class="primary-button" id="empty-load">تحميل القائمة الآن</button></div></div>
-      </section>
-
-      <section class="content-section channels-section" id="channels-section">
-        <div class="section-heading"><div><span class="section-kicker">مكتبتك التلفزيونية</span><h2 id="list-heading">كل القنوات</h2></div><div class="list-tools"><label class="search-box"><span>⌕</span><input id="channel-search" type="search" placeholder="ابحث عن قناة..." autocomplete="off"/><kbd>⌘ K</kbd></label><select id="sort-select" aria-label="ترتيب القنوات"><option value="playlist">ترتيب القائمة</option><option value="name">الاسم: أ-ي</option><option value="favorites">المفضلة أولاً</option></select></div></div>
-        <div class="filter-row" id="filter-row"><button class="filter-chip active" data-filter="all">الكل</button><button class="filter-chip" data-filter="favorites">المفضلة</button><button class="filter-chip" data-filter="recent">شوهدت مؤخراً</button></div>
-        <div id="channel-list" class="channel-list"><div class="list-empty glass-panel"><div class="spinner-ring"></div><h3>قائمة القنوات غير محمّلة</h3><p>اضغط «تحميل قائمة القنوات» لقراءة ملف M3U.</p><button class="primary-button" id="list-load">تحميل قائمة القنوات</button></div></div>
-        <div class="list-footer"><span id="visible-count">لا توجد قنوات معروضة</span><button id="load-more" class="secondary-button hidden">عرض المزيد</button></div>
-      </section>
-
-      <section class="content-section hidden" id="settings-section">
-        <div class="section-heading"><div><span class="section-kicker">تحكّم بتجربتك</span><h2>الإعدادات</h2></div></div>
-        <div class="settings-layout">
-          <article class="settings-card glass-panel"><div class="settings-card-title"><span class="settings-icon">▤</span><div><h3>مصدر قائمة القنوات</h3><p>أضف رابط M3U أو غيّر المصدر الحالي.</p></div></div><label class="field-label" for="playlist-url">رابط قائمة M3U / M3U8</label><input class="text-field" id="playlist-url" type="url" value="https://iptv-org.github.io/iptv/index.m3u" dir="ltr"/><div class="settings-actions"><button class="primary-button" id="save-load-url">حفظ وتحميل</button><button class="secondary-button" id="restore-default">استعادة الافتراضي</button></div><p class="helper-text">قد تمنع بعض المصادر التحميل من المتصفح بسبب إعدادات CORS. استخدم مصادر تملك حق الوصول إليها.</p></article>
-          <article class="settings-card glass-panel"><div class="settings-card-title"><span class="settings-icon">◐</span><div><h3>المظهر</h3><p>اختر المظهر الذي يناسبك.</p></div></div><div class="theme-options"><button class="theme-option selected" data-theme="glass"><span class="theme-preview theme-glass"></span><strong>زجاجي</strong></button><button class="theme-option" data-theme="dark"><span class="theme-preview theme-dark"></span><strong>داكن</strong></button><button class="theme-option" data-theme="light"><span class="theme-preview theme-light"></span><strong>فاتح</strong></button></div><div class="setting-toggle"><div><strong>تذكّر آخر قناة</strong><small>استرجاع القناة التي فتحتها مؤخراً</small></div><label class="switch"><input type="checkbox" id="remember-last" checked/><span></span></label></div></article>
-          <article class="settings-card glass-panel"><div class="settings-card-title"><span class="settings-icon">♡</span><div><h3>البيانات المحلية</h3><p>المفضلة وسجل المشاهدة محفوظان على هذا الجهاز.</p></div></div><div class="data-row"><div><strong>سجل المشاهدة</strong><small id="history-summary">0 قناة</small></div><button class="secondary-button" id="clear-history">مسح السجل</button></div><div class="data-row"><div><strong>المفضلة</strong><small id="favorite-summary">0 قناة</small></div><button class="secondary-button" id="clear-favorites">مسح المفضلة</button></div></article>
-          <article class="settings-card glass-panel"><div class="settings-card-title"><span class="settings-icon">ⓘ</span><div><h3>حول IBRATV</h3><p>مشغل قوائم IPTV بسيط بتصميم زجاجي.</p></div></div><div class="about-row"><span>الإصدار</span><strong>1.0.0</strong></div><div class="about-row"><span>مصدر القائمة الافتراضي</span><strong>IPTV-org</strong></div><a class="source-link" href="https://github.com/iptv-org/iptv" target="_blank" rel="noreferrer">زيارة مشروع IPTV-org ↗</a><p class="helper-text">IBRATV لا يستضيف القنوات ولا يضمن توافر روابط البث. استخدم قوائم ومصادر مسموحاً لك بمشاهدتها.</p></article>
+      <div class="now">
+        <div class="now-logo brandish" id="now-logo"><img src="logo.png" alt="" /></div>
+        <div class="now-info">
+          <h3 id="now-name">IBRATV</h3>
+          <div class="now-meta" id="now-meta">مشغّل تلفزيون مباشر</div>
         </div>
-      </section>
+        <button class="fav-btn" id="now-fav" title="المفضلة" disabled>☆</button>
+      </div>
 
-      <footer class="app-footer"><div class="footer-brand">IBRA<span>TV</span></div><span>YOUR WORLD. YOUR TV.</span><span>واجهة تجريبية قابلة للتطوير</span></footer>
-    </main>
+      <div class="controls">
+        <button class="cbtn" id="prev" title="القناة السابقة (PageUp)"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="cbtn main" id="playpause" title="تشغيل / إيقاف (Space)"><svg viewBox="0 0 24 24" id="pp-icon"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="cbtn" id="next" title="القناة التالية (PageDown)"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+        <div class="vol">
+          <button class="cbtn sm" id="mute" title="كتم (M)"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path id="vol-wave" d="M16 8.5a5 5 0 0 1 0 7"/></svg></button>
+          <input type="range" id="volume" min="0" max="1" step="0.05" value="1" />
+        </div>
+        <select id="quality" class="quality hidden" title="جودة البث"></select>
+        <span class="res-now" id="res-now"></span>
+        <button class="cbtn sm" id="pip" title="صورة داخل صورة"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><rect x="12" y="11" width="7" height="6" rx="1" class="fill"/></svg></button>
+        <button class="cbtn sm" id="copy-link" title="نسخ رابط البث"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></button>
+        <button class="cbtn sm" id="fullscreen" title="ملء الشاشة (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <span class="dot" id="status-dot"></span><span id="status-text">جاهز</span>
+    <span class="sep"></span><span id="source-label">—</span>
+    <button class="upd-chip hidden" id="upd-chip" title="يوجد تحديث">⬆ تحديث متوفر</button>
+    <span class="credit">برمجة و تطوير ابراهيم الخزرجي</span>
+    <a class="tg" href="https://t.me/ibraprogram" target="_blank" rel="noreferrer" title="قناة التليكرام"><svg viewBox="0 0 24 24"><path d="M21.5 4.5 2.8 11.7c-1 .4-1 1.8.1 2.1l4.6 1.4 1.8 5.5c.2.7 1.1.9 1.6.4l2.6-2.5 4.7 3.5c.6.4 1.4.1 1.6-.6L23 5.8c.2-.9-.7-1.6-1.5-1.3Z"/><path d="m7.5 15.2 11-7.7-8.2 9.1"/></svg>t.me/ibraprogram</a>
+  </footer>
+
+  <!-- ===== Update notification ===== -->
+  <div class="notice glass hidden" id="notice" role="status">
+    <div class="notice-ico" id="notice-ico">⬆</div>
+    <div class="notice-body">
+      <b id="notice-title">تحديث جديد</b>
+      <small id="notice-text"></small>
+      <div class="progress hidden" id="notice-progress"><i id="notice-bar"></i></div>
+    </div>
+    <div class="notice-actions">
+      <button class="btn" id="notice-go">تحديث الآن</button>
+      <button class="btn ghost" id="notice-later">لاحقاً</button>
+    </div>
   </div>
 
-  <div class="toast-region" id="toast-region" aria-live="polite"></div>
-  <div class="modal-backdrop hidden" id="player-modal" role="dialog" aria-modal="true" aria-label="مشغل القنوات"><div class="player-dialog glass-panel"><div class="player-top"><div class="player-channel-info"><div class="channel-logo large" id="player-logo">TV</div><div><strong id="player-title">اسم القناة</strong><small id="player-subtitle">بث مباشر</small></div></div><div class="player-top-actions"><button class="icon-button" id="player-fullscreen" title="ملء الشاشة">⛶</button><button class="icon-button close-player" id="close-player" title="إغلاق">×</button></div></div><div class="video-wrap" id="video-wrap"><video id="video-player" controls playsinline preload="metadata"></video><div class="player-overlay hidden" id="player-overlay"><div class="spinner-ring"></div><p id="player-message">جارٍ الاتصال بالبث...</p><button class="secondary-button" id="retry-stream">إعادة المحاولة</button></div></div><div class="player-bottom"><div><span class="live-pulse"></span><span id="player-status">جاهز للتشغيل</span></div><div class="player-bottom-actions"><button class="secondary-button" id="player-favorite">♡ إضافة للمفضلة</button><button class="secondary-button" id="prev-channel">→ السابق</button><button class="secondary-button" id="next-channel">التالي ←</button></div></div></div></div>
-  <div class="modal-backdrop hidden" id="loading-modal"><div class="loading-dialog glass-panel"><div class="spinner-ring"></div><h3>جارٍ تحميل القنوات</h3><p id="loading-message">الاتصال بمصدر القائمة...</p></div></div>
+  <!-- ===== Library modal ===== -->
+  <div class="modal hidden" id="library">
+    <div class="sheet glass">
+      <div class="sheet-head"><h2>مكتبة القوائم</h2><button class="x" data-close>×</button></div>
+      <div class="sheet-body" id="library-body"></div>
+      <div class="custom-add">
+        <h4>إضافة قائمة خاصة (M3U)</h4>
+        <div class="row">
+          <input id="custom-name" placeholder="اسم القائمة" />
+          <input id="custom-url" placeholder="https://…/playlist.m3u" dir="ltr" />
+          <button class="btn" id="custom-save">إضافة وتشغيل</button>
+        </div>
+        <div class="row"><label class="btn ghost file-btn">فتح ملف M3U من الحاسبة<input type="file" id="m3u-file" accept=".m3u,.m3u8,.txt" hidden /></label></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Settings modal ===== -->
+  <div class="modal hidden" id="settings">
+    <div class="sheet small glass">
+      <div class="sheet-head"><h2>الإعدادات</h2><button class="x" data-close>×</button></div>
+      <div class="sheet-body">
+        <div class="set-row"><div><b>شفافية الزجاج</b><small>درجة شفافية الواجهة الحمراء</small></div><input type="range" id="glass-level" min="0.25" max="0.9" step="0.05" /></div>
+        <div class="set-row"><div><b>تشغيل آخر قناة عند الفتح</b><small>يكمل من حيث توقفت</small></div><label class="switch"><input type="checkbox" id="resume-last" /><span></span></label></div>
+        <div class="set-row"><div><b>تحديث القائمة تلقائياً</b><small>كل 6 ساعات، وإلا تُستخدم النسخة المحفوظة</small></div><label class="switch"><input type="checkbox" id="auto-refresh" /><span></span></label></div>
+        <div class="set-row"><div><b>تحديث القائمة الحالية الآن</b><small id="cache-info">—</small></div><button class="btn ghost" id="refresh-now">تحديث</button></div>
+        <div class="set-row"><div><b>مسح المفضلة والسجل</b><small>يحذف بيانات هذا الجهاز فقط</small></div><button class="btn ghost danger" id="clear-data">مسح</button></div>
+        <div class="set-row"><div><b>تحديثات البرنامج</b><small id="app-ver">الإصدار الحالي —</small></div><button class="btn ghost" id="check-update">فحص التحديثات</button></div>
+        <div class="set-row"><div><b>إشعار عند وجود قنوات جديدة</b><small>يفحص القائمة بالخلفية ويخبرك بالتحديث</small></div><label class="switch"><input type="checkbox" id="notify-channels" /><span></span></label></div>
+        <div class="about">
+          <img src="logo.png" alt="" />
+          <div>
+            <b id="about-ver">IBRATV 2.0</b>
+            <small>برمجة و تطوير ابراهيم الخزرجي</small>
+            <div class="links">
+              <a href="https://t.me/ibraprogram" target="_blank" rel="noreferrer">تليكرام: t.me/ibraprogram</a>
+              <a href="https://www.tiktok.com/@ibraprogram" target="_blank" rel="noreferrer">تيك توك: @ibraprogram</a>
+            </div>
+            <small class="muted">القنوات من مشروع IPTV-org المفتوح. البرنامج لا يستضيف أي بث.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+
+  <script src="vendor/hls.min.js"></script>
+  <script src="vendor/mpegts.js"></script>
+  <script src="vendor/dash.all.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
