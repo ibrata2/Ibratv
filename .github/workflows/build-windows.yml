@@ -141,7 +141,9 @@ jobs:
           path: out/*.apk
           retention-days: 14
 
+      # only signed APKs go to the release; unsigned builds stay as workflow artifacts
       - name: Attach APKs to release v${{ steps.apks.outputs.version }}
+        if: env.IBRATV_KEYSTORE != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.apks.outputs.version }}
