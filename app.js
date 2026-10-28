@@ -589,6 +589,8 @@
     if (state.current !== ch) return;
 
     if (ch.url.startsWith("youtube:")) { playYouTube(ch); return; }
+    // iPhone: Apple's own player handles HLS natively (no CORS limits, best battery)
+    if (native?.ios && !/\.(mpd|flv)(\?|$)/i.test(ch.url)) { playNative(ch); return; }
     const url = ch.url;
     const path = url.split("?")[0].toLowerCase();
     stallTimer = setTimeout(() => { if (state.current === ch && video.readyState < 2) fail(ch, "انتهت مهلة الاتصال بالبث"); }, 25000);
@@ -814,7 +816,10 @@
   $("screen").addEventListener("dblclick", toggleFullscreen);
   $("screen").addEventListener("click", (e) => { if (e.target === video) togglePlay(); });
   $("pip").addEventListener("click", async () => {
-    try { if (document.pictureInPictureElement) await document.exitPictureInPicture(); else await video.requestPictureInPicture(); } catch { toast("صورة داخل صورة غير متاحة الآن", true); }
+    try {
+      if (native?.ios && video.webkitSetPresentationMode) { video.webkitSetPresentationMode(video.webkitPresentationMode === "picture-in-picture" ? "inline" : "picture-in-picture"); return; }
+      if (document.pictureInPictureElement) await document.exitPictureInPicture(); else await video.requestPictureInPicture();
+    } catch { toast("صورة داخل صورة غير متاحة الآن", true); }
   });
   $("copy-link").addEventListener("click", async () => {
     if (!state.current) return;
@@ -834,6 +839,7 @@
     if (video.paused) video.play().catch(() => {}); else video.pause();
   }
   function toggleFullscreen() {
+    if (native?.ios && state.engine?.type !== "youtube") { try { video.webkitEnterFullscreen ? video.webkitEnterFullscreen() : video.requestFullscreen(); } catch {} return; }
     if (state.engine?.type === "youtube" && !document.fullscreenElement) { $("screen").requestFullscreen?.().catch(() => {}); return; }
     if (document.fullscreenElement) document.exitFullscreen?.();
     else $("screen").requestFullscreen?.().catch(() => {});
@@ -1030,8 +1036,8 @@
       kind: "app", icon: "⬆",
       title: `تحديث جديد لـ IBRATV — الإصدار ${r.version}`,
       text: (notes || "تحسينات وإصلاحات جديدة.") + `\nإصدارك الحالي ${r.current}${sizeMb}`,
-      goLabel: "تحديث الآن",
-      onGo: downloadAndInstall,
+      goLabel: native?.ios ? "تنزيل التحديث" : "تحديث الآن",
+      onGo: native?.ios ? () => { native.downloadUpdate({ url: r.assetUrl }); hideNotice(); toast("نزّل ملف IPA الجديد ووقّعه بنفس طريقتك"); } : downloadAndInstall,
       laterLabel: "لاحقاً"
     });
     $("notice-later").onclick = () => { save("skipVer", r.version); hideNotice(); };

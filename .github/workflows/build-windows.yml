@@ -1,4 +1,4 @@
-name: Build IBRATV (Windows + Android)
+name: Build IBRATV (Windows + Android + iPhone)
 
 on:
   workflow_dispatch:
@@ -16,6 +16,7 @@ on:
       - "package.json"
       - "electron/**"
       - "android/**"
+      - "ios/**"
       - "android-bridge.js"
       - "capacitor.config.json"
       - "scripts/**"
@@ -141,11 +142,73 @@ jobs:
           path: out/*.apk
           retention-days: 14
 
-      # only signed APKs go to the release; unsigned builds stay as workflow artifacts
+      # unsigned builds are named *-unsigned.apk (the in-app updater ignores them) until the key secrets are set
       - name: Attach APKs to release v${{ steps.apks.outputs.version }}
-        if: env.IBRATV_KEYSTORE != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.apks.outputs.version }}
           overwrite_files: true
           files: out/*.apk
+
+  # iPhone / iPad — built on GitHub's macOS machines (no Mac needed), unsigned IPA for self-signing
+  ios:
+    needs: build
+    runs-on: macos-15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+        run: npm install
+
+      - name: Copy web app into the iOS project
+        run: |
+          node scripts/build-web.cjs
+          npx cap sync ios
+
+      - name: Version
+        id: ver
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          CODE=$(node -p "v=require('./package.json').version.split('.').map(Number);v[0]*10000+v[1]*100+v[2]")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          sed -i '' -E "s/MARKETING_VERSION = [^;]+;/MARKETING_VERSION = $VERSION;/g; s/CURRENT_PROJECT_VERSION = [^;]+;/CURRENT_PROJECT_VERSION = $CODE;/g" ios/App/App.xcodeproj/project.pbxproj
+
+      - name: Build unsigned IPA
+        run: |
+          set +e
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee "$RUNNER_TEMP/xcode.log" | grep -E "error:|warning: .*deprecated|BUILD" | head -50
+          status=${PIPESTATUS[0]}
+          if [ "$status" != "0" ]; then
+            msg=$(grep -E "error:|failed" "$RUNNER_TEMP/xcode.log" | head -20 | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=iOS build failed::$msg"
+            exit 1
+          fi
+          mkdir -p Payload out
+          cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qry "out/IBRATV-${{ steps.ver.outputs.version }}-iPhone.ipa" Payload
+          ls -la out
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IBRATV-iPhone
+          path: out/*.ipa
+          retention-days: 14
+
+      - name: Attach IPA to release v${{ steps.ver.outputs.version }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          overwrite_files: true
+          files: out/*.ipa

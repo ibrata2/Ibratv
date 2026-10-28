@@ -472,3 +472,10 @@ html.dev-tv #copy-link { display: none; }
 html.dev-tv .blob { animation: none; }       /* save GPU on TV boxes */
 html.android .glass { backdrop-filter: blur(16px) saturate(150%); -webkit-backdrop-filter: blur(16px) saturate(150%); }
 html.android .grain { display: none; }
+
+/* ---------------- iPhone / iPad ---------------- */
+html.ios body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+html.ios .glass { backdrop-filter: blur(16px) saturate(150%); -webkit-backdrop-filter: blur(16px) saturate(150%); }
+html.ios .grain { display: none; }
+html.ios .controls .vol { display: none; }
+html.ios .drawer-shade, html.ios .groups { padding-top: env(safe-area-inset-top); }
