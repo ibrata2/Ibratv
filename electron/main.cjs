@@ -1,6 +1,6 @@
 // IBRATV — Electron main process
 // برمجة و تطوير ابراهيم الخزرجي
-const { app, BrowserWindow, shell, ipcMain, net, session } = require("electron");
+const { app, BrowserWindow, shell, ipcMain, net, session, nativeTheme, systemPreferences } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const os = require("node:os");
@@ -106,6 +106,27 @@ ipcMain.handle("ibratv:install-update", () => {
   setTimeout(() => app.quit(), 400);
   return true;
 });
+
+/* ---------- themes: light/dark chrome, acrylic and the Windows accent colour ---------- */
+function systemStyle() {
+  let accent = "";
+  try { accent = systemPreferences.getAccentColor ? systemPreferences.getAccentColor() : ""; } catch {}
+  return { dark: nativeTheme.shouldUseDarkColors, accent: accent ? "#" + accent.slice(0, 6) : "" };
+}
+ipcMain.handle("ibratv:apply-theme", (e, mode) => {
+  nativeTheme.themeSource = mode === "light" ? "light" : mode === "dark" ? "dark" : "system";
+  const st = systemStyle();
+  const win = BrowserWindow.fromWebContents(e.sender);
+  try { win?.setTitleBarOverlay?.({ color: "#00000000", symbolColor: st.dark ? "#ffd9de" : "#3a1a20", height: 44 }); } catch {}
+  return st;
+});
+function pushSystemStyle() {
+  if (nativeTheme.themeSource !== "system") return;
+  const st = systemStyle();
+  for (const w of BrowserWindow.getAllWindows()) w.webContents.send("ibratv:system-style", st);
+}
+nativeTheme.on("updated", pushSystemStyle);
+try { systemPreferences.on("accent-color-changed", pushSystemStyle); } catch {}
 
 ipcMain.handle("ibratv:open-external", (_e, url) => {
   if (/^https?:\/\//i.test(url)) shell.openExternal(url);

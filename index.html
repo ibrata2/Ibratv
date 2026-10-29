@@ -30,6 +30,7 @@
       <button class="tbtn" id="open-library" title="مكتبة القوائم">
         <svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>القوائم</span>
       </button>
+      <button class="tbtn icon" id="theme-cycle" title="تغيير شكل التطبيق"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.8 1.7-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7H16a5 5 0 0 0 5-5C21 6.5 17 3 12 3Z"/><circle cx="7.5" cy="11.5" r="1.2" class="fill"/><circle cx="10.5" cy="7.5" r="1.2" class="fill"/><circle cx="15" cy="7.5" r="1.2" class="fill"/></svg></button>
       <button class="tbtn icon" id="open-settings" title="الإعدادات">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
       </button>
@@ -171,6 +172,14 @@
     <div class="sheet small glass">
       <div class="sheet-head"><h2>الإعدادات</h2><button class="x" data-close>×</button></div>
       <div class="sheet-body">
+        <div class="set-title"><b>شكل التطبيق</b><small id="theme-hint"></small></div>
+        <div class="themes" id="themes">
+          <button class="theme-opt" data-theme-opt="red"><i></i>زجاجي أحمر وأسود</button>
+          <button class="theme-opt" data-theme-opt="white-red"><i></i>زجاجي أبيض وأحمر</button>
+          <button class="theme-opt" data-theme-opt="white"><i></i>زجاجي أبيض</button>
+          <button class="theme-opt" data-theme-opt="clear"><i></i>زجاجي شفاف</button>
+          <button class="theme-opt" data-theme-opt="system"><i></i>حسب ستايل الجهاز</button>
+        </div>
         <div class="set-row"><div><b>شفافية الزجاج</b><small>درجة شفافية الواجهة الحمراء</small></div><input type="range" id="glass-level" min="0.25" max="0.9" step="0.05" /></div>
         <div class="set-row"><div><b>تشغيل آخر قناة عند الفتح</b><small>يكمل من حيث توقفت</small></div><label class="switch"><input type="checkbox" id="resume-last" /><span></span></label></div>
         <div class="set-row"><div><b>تحديث القائمة تلقائياً</b><small>كل 6 ساعات، وإلا تُستخدم النسخة المحفوظة</small></div><label class="switch"><input type="checkbox" id="auto-refresh" /><span></span></label></div>

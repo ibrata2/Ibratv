@@ -106,7 +106,7 @@
     current: null,
     engine: null,
     loadToken: 0,
-    settings: Object.assign({ glass: 0.55, resumeLast: true, autoRefresh: true, notifyChannels: true }, load("settings", {}))
+    settings: Object.assign({ glass: 0.55, resumeLast: true, autoRefresh: true, notifyChannels: true, theme: "red" }, load("settings", {}))
   };
 
   function allSources() {
@@ -1193,6 +1193,65 @@
   }
   const capApp = window.Capacitor?.Plugins?.App;
   if (capApp?.addListener) capApp.addListener("backButton", handleBack);
+
+  /* ================= themes — أشكال التطبيق ================= */
+  const THEMES = [
+    { id: "red", name: "زجاجي أحمر وأسود", dark: true },
+    { id: "white-red", name: "زجاجي أبيض وأحمر", dark: false },
+    { id: "white", name: "زجاجي أبيض", dark: false },
+    { id: "clear", name: "زجاجي شفاف", dark: true },
+    { id: "system", name: "حسب ستايل الجهاز" }
+  ];
+  const darkMQ = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
+  const hexToRgb = (h) => { h = h.replace("#", ""); if (h.length >= 6) return [0, 2, 4].map((i) => parseInt(h.substr(i, 2), 16)); return null; };
+  const mix = (rgb, t, k) => rgb.map((c, i) => Math.round(c + (t[i] - c) * k));
+  const css = (rgb) => `rgb(${rgb.join(",")})`;
+  const ACCENT_VARS = ["--acc-rgb", "--acc2-rgb", "--acc-hi", "--acc-lo", "--acc-border", "--red", "--red-2", "--sys-acc"];
+  let sysStyle = { dark: darkMQ ? darkMQ.matches : true, accent: "" };
+
+  async function applyTheme(id, announce) {
+    if (!THEMES.some((t) => t.id === id)) id = "red";
+    const root = document.documentElement;
+    let base = id, dark;
+    if (id === "system") {
+      if (native?.applyTheme) { try { const r = await native.applyTheme("system"); if (r) sysStyle = { dark: !!r.dark, accent: r.accent || "" }; } catch {} }
+      else sysStyle.dark = darkMQ ? darkMQ.matches : true;
+      dark = sysStyle.dark;
+      base = dark ? "red" : "white-red";
+    } else {
+      dark = THEMES.find((t) => t.id === id).dark;
+      native?.applyTheme?.(dark ? "dark" : "light").catch?.(() => {});
+    }
+    root.dataset.theme = base;
+    ACCENT_VARS.forEach((v) => root.style.removeProperty(v));
+    // follow the device accent colour (Windows accent) in "system" mode
+    const acc = id === "system" && sysStyle.accent ? hexToRgb(sysStyle.accent) : null;
+    if (acc) {
+      const W = [255, 255, 255], K = [0, 0, 0];
+      root.style.setProperty("--acc-rgb", acc.join(", "));
+      root.style.setProperty("--acc2-rgb", mix(acc, W, .35).join(", "));
+      root.style.setProperty("--acc-hi", css(mix(acc, W, .18)));
+      root.style.setProperty("--acc-lo", css(mix(acc, K, .25)));
+      root.style.setProperty("--acc-border", css(mix(acc, W, .45)));
+      root.style.setProperty("--red", css(acc));
+      root.style.setProperty("--red-2", css(mix(acc, W, .2)));
+      root.style.setProperty("--sys-acc", css(acc));
+    }
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#1a0509" : "#f7eef0");
+    document.querySelectorAll("[data-theme-opt]").forEach((b) => b.classList.toggle("on", b.dataset.themeOpt === id));
+    $("theme-hint").textContent = id === "system" ? (dark ? "الجهاز على الوضع الداكن" : "الجهاز على الوضع الفاتح") + (acc ? " + لون الويندوز" : "") : "";
+    state.settings.theme = id; saveSettings();
+    if (announce) toast(`🎨 ${THEMES.find((t) => t.id === id).name}`);
+  }
+  document.querySelectorAll("[data-theme-opt]").forEach((b) => b.addEventListener("click", () => applyTheme(b.dataset.themeOpt, true)));
+  $("theme-cycle").addEventListener("click", () => {
+    const i = THEMES.findIndex((t) => t.id === state.settings.theme);
+    applyTheme(THEMES[(i + 1) % THEMES.length].id, true);
+  });
+  const resyncSystem = () => { if (state.settings.theme === "system") applyTheme("system"); };
+  darkMQ?.addEventListener?.("change", resyncSystem);
+  native?.onSystemStyle?.((st) => { if (state.settings.theme === "system") { sysStyle = st; applyTheme("system"); } });
+  applyTheme(state.settings.theme);
 
   /* ================= start ================= */
   save("v21", true); save("pins", state.pins);
