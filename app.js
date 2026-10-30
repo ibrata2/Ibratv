@@ -34,7 +34,6 @@
   /* ================= playlist library ================= */
   const LIBRARY = [
     { title: "المختارات والعراق", items: [
-      { id: "picks", name: "مختارات المشاهد العربي", sub: "العراقية، MBC، الأخبار، الرياضة", urls: [IPTV + "countries/iq.m3u", IPTV + "languages/ara.m3u", IPTV + "regions/arab.m3u", IPTV + "categories/sports.m3u"], icon: "⭐" },
       { id: "iq", name: "قنوات العراق", url: IPTV + "countries/iq.m3u", flag: "iq" }
     ] },
     { title: "عربي", items: [
@@ -58,38 +57,30 @@
     { title: "حسب النوع (من كل العالم)", items: ["news", "sports", "movies", "series", "kids", "animation", "documentary", "music", "religious", "entertainment", "comedy", "cooking", "education", "science", "travel"]
       .map((c) => ({ id: "cat-" + c, name: CAT[c][0], url: IPTV + `categories/${c}.m3u`, icon: CAT[c][1] })) }
   ];
-  const DEFAULT_PINS = ["picks", "iq", "ara", "arab", "all", "cat-news", "cat-sports", "cat-movies", "cat-series", "cat-kids"];
+  const DEFAULT_PINS = ["iq", "ara", "arab", "all", "cat-news", "cat-sports", "cat-movies", "cat-series", "cat-kids"];
 
   /* ================= Arab viewer picks (مختارات المشاهد العربي) =================
      matched by tvg-id so links stay fresh with every playlist update.
      "id@feed" pins a specific feed (e.g. Al Jazeera Arabic, not English). */
-  const PICKS = [
-    { key: "mine", name: "قنواتي المضافة", icon: "➕", mine: true },
-    { key: "iraq", name: "القنوات العراقية", flag: "iq", ids: ["AlIraqia.iq", "AlIraqiaNews.iq", "AlIraqiaSport.iq", "Alrabiaa.iq", "AlSharqiya.iq", "AlSharqiyaNews.iq", "MBCIraq.iq", "UTV.iq", "DijlahTV.iq", "INews.iq", "AlRasheedTV.iq", "ShamsTV.iq", "IraqFuture.iq", "AlawlaTV.iq", "SamarraTV.iq", "AlghadeerTV.iq", "AnwarTV2.iq", "AlJanoubTV.iq", "RudawTV.iq", "Kurdistan24.iq", "Kurdsat.iq"] },
-    { key: "mbc", name: "مجموعة MBC", icon: "📺", ids: ["MBC1.ae", "MBCIraq.iq", "MBCDrama.ae", "MBC4.ae", "MBC5.ae", "MBCMasr.eg", "MBCMasr2.eg", "MBCMasrDrama.sa", "MBC1Egypt.eg", "MBCPlusDrama.sa", "MBCBollywood.ae", "MBC3USA.us", "MBCDramaUSA.us", "MBCFM.ae"] },
-    { key: "news", name: "الأخبار العربية", icon: "📰", ids: ["AlJazeera.qa@arabic", "AlJazeeraMubasher.qa", "Alarabiya.ae", "SkyNewsArabia.ae@hd", "AsharqNews.sa", "AlIraqiaNews.iq", "AlSharqiyaNews.iq", "BBCArabic.uk", "France24.fr@arabic", "AlEkhbariya.sa", "TRTArabi.tr", "AlGhadTV.eg", "AlMayadeenTV.lb", "CNBCArabiya.ae", "AlArabiyaBusiness.ae", "CGTNArabic.cn", "Medi1TVArabic.ma"] },
-    { key: "variety", name: "منوعات ودراما عربية", icon: "🎭", ids: ["DubaiTVInternational.ae", "RoyaTV.jo", "QatarTelevision.qa", "LBCInternational.lb", "MTVLebanon.lb", "AlJadeed.lb", "Maraya.sa", "AlSharqiyaMinKabla.ae", "RotanaDrama.sa", "RotanaCinemaKSA.sa", "RotanaCinemaEgypt.eg", "RotanaComedy.sa", "RotanaClassic.sa", "RotanaKhalijia.sa", "NileDrama.eg", "iFilmArabic.ir", "2M.ma", "ElWatania1.tn", "AsharqDocumentary.sa", "AlJazeeraDocumentary.qa"] },
-    { key: "sports", name: "الرياضة", icon: "⚽", ids: ["AlIraqiaSport.iq", "Alrabiaa.iq", "beINSPORTSXTRA.us", "SharjahSports.ae", "JordanSport.jo", "OmanSportsTV.om", "BahrainSports1.bh", "BahrainSports2.bh", "Prime.sy"], rule: (ch) => ch.cats.includes("sports") && ARAB.includes(ch.cc) },
-    { key: "kids", name: "أطفال", icon: "🧸", ids: ["SpacetoonArabic.ae", "CartoonNetworkArabic.ae", "MBC3USA.us", "AfarinBaxcha.iq"] },
-    { key: "religious", name: "دينية", icon: "🕌", ids: ["Alquran.iq", "QatarTVTheHolyQuran.qa", "ImamHusseinTV1.iq", "AlabbassiaTV.iq", "KarbalaDocumentary.iq", "IqraaArabic.sa", "AlResalah.sa"] }
-  ].map((p) => ({ ...p, ids: (p.ids || []).map((x) => x.toLowerCase()) }));
+  const PICKS = [];   // «مختارات المشاهد العربي» removed (v2.5) — one favourites list instead
   // ready-made favourites for a new Arab viewer (first launch)
   const SEED_FAVORITES = ["AlIraqia.iq", "AlIraqiaNews.iq", "AlIraqiaSport.iq", "Alrabiaa.iq", "AlSharqiya.iq", "MBCIraq.iq", "UTV.iq", "MBC1.ae", "MBCDrama.ae", "MBC4.ae", "MBCMasr.eg", "AlJazeera.qa@arabic", "Alarabiya.ae", "SkyNewsArabia.ae@hd", "DubaiTVInternational.ae", "SpacetoonArabic.ae", "beINSPORTSXTRA.us", "SharjahSports.ae"].map((x) => x.toLowerCase());
   // channels not in the free M3U lists: official YouTube live streams
   const BUILTIN_EXTRA = [
     { key: "youtube:@alrabiaatv", url: "youtube:@alrabiaatv", name: "الرابعة Alrabiaa", tid: "alrabiaa.iq", feed: "", logo: "", cc: "iq", cats: ["general", "sports"], height: 0, interlaced: false, rc: "", geo: false, not247: false, ua: "", ref: "", yt: true, idx: -1 }
   ];
-  const EXTRA_SOURCES = ["picks", "iq", "ara", "arab", "mena", "all", "cat-sports"];
+  const EXTRA_SOURCES = ["iq", "ara", "arab", "mena", "all", "cat-sports"];
 
   /* ================= state ================= */
   const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(P + k)); return v ?? d; } catch { return d; } };
   const save = (k, v) => { try { localStorage.setItem(P + k, JSON.stringify(v)); } catch {} };
 
   const state = {
-    sourceId: load("v21", false) ? load("source", "picks") : "picks",
+    sourceId: (() => { const v = load("source", "iq"); return v === "picks" ? "iq" : v; })(),
     mine: load("mine", []),
     custom: load("custom", []),
-    pins: (() => { const p = load("pins", DEFAULT_PINS); if (!load("v21", false) && !p.includes("picks")) p.unshift("picks"); return p; })(),
+    pins: load("pins", DEFAULT_PINS).filter((p) => p !== "picks"),
+    favGroup: load("favGroup", "none"),
     channels: [],
     byUrl: new Map(),
     groupBy: load("groupBy", "country"),
@@ -269,7 +260,14 @@
     }
     return [...best.values()].sort((a, b) => a.r - b.r || coll.compare(a.ch.name, b.ch.name)).map((x) => x.ch);
   }
+  // v2.5: the ready-made «Arab viewer» favourites were removed — take them out once, keep what the user added
   function seedFavorites() {
+    if (!load("seededFav", false) || load("unseeded25", false)) return;
+    const seeded = new Set(SEED_FAVORITES.map((x) => x.split("@")[0]));
+    state.favorites = state.favorites.filter((f) => f.mine || !seeded.has(f.tid || ""));
+    save("favorites", state.favorites); save("unseeded25", true);
+  }
+  function seedFavoritesOld() {
     if (load("seededFav", false)) return;
     const found = [];
     for (const id of SEED_FAVORITES) {
@@ -303,7 +301,6 @@
       if (!keepGroup) {
         state.group = { type: "special", key: "all" };
         if (state.groupBy === "country" && chans.some((c) => c.cc === "iq") && new Set(chans.map((c) => c.cc)).size > 1) state.group = { type: "country", key: "iq" };
-        if (src.id === "picks") state.group = { type: "pick", key: "iraq" };
       }
       const when = r.savedAt ? new Date(r.savedAt).toLocaleString("ar-IQ", { dateStyle: "short", timeStyle: "short" }) : "";
       status(`${fmt(chans.length)} قناة${r.offline ? " — بدون إنترنت، نسخة محفوظة" : r.fromCache ? " — من النسخة المحفوظة" : ""}`, r.offline ? "err" : "ok");
@@ -440,7 +437,49 @@
       else if (state.sort === "quality") list.sort((a, b) => b.height - a.height || coll.compare(a.name, b.name));
       else if (g.type !== "special" || g.key === "all") list.sort((a, b) => (a.idx ?? 0) - (b.idx ?? 0));
     }
+    if (favGrouping()) {
+      const order = new Map();
+      list.forEach((c, i) => order.set(c, i));
+      list.sort((a, b) => favGroupRank(a) - favGroupRank(b) || coll.compare(favGroupLabel(a), favGroupLabel(b)) || order.get(a) - order.get(b));
+    }
     return list;
+  }
+
+  /* ---- favourites grouping ---- */
+  const favGrouping = () => state.group?.type === "special" && state.group.key === "fav" && state.favGroup !== "none" && !state.query;
+  const RES_ORDER = { "4k": 0, fhd: 1, hd: 2, sd: 3, "": 4 };
+  function favGroupLabel(ch) {
+    if (state.favGroup === "country") return ch.cc ? countryName(ch.cc) : "بدون دولة";
+    if (state.favGroup === "category") { const c = (ch.cats || []).find((x) => x !== "undefined"); return c ? (CAT[c] ? CAT[c][0] : c) : "غير مصنّفة"; }
+    if (state.favGroup === "quality") return ch.rc ? RES_LABEL[ch.rc] : "دقة غير معروفة";
+    if (state.favGroup === "letter") return letterOf(ch.name);
+    return "";
+  }
+  function favGroupRank(ch) {
+    if (state.favGroup === "country") return ch.cc === "iq" ? 0 : ARAB.includes(ch.cc) ? 1 : ch.cc ? 2 : 3;
+    if (state.favGroup === "quality") return RES_ORDER[ch.rc || ""];
+    if (state.favGroup === "category") return (ch.cats || []).some((x) => x !== "undefined") ? 0 : 1;
+    return 0;
+  }
+  function favGroupIcon(ch) {
+    if (state.favGroup === "country") return ch.cc ? `<img src="${flagUrl(ch.cc)}" alt="">` : "🏳️";
+    if (state.favGroup === "category") { const c = (ch.cats || []).find((x) => x !== "undefined"); return c && CAT[c] ? CAT[c][1] : "📺"; }
+    if (state.favGroup === "quality") return "◩";
+    return "";
+  }
+  function headerBefore(i) {
+    if (!favGrouping()) return "";
+    const lbl = favGroupLabel(state.list[i]);
+    if (i > 0 && favGroupLabel(state.list[i - 1]) === lbl) return "";
+    let n = 0;
+    for (let j = i; j < state.list.length && favGroupLabel(state.list[j]) === lbl; j++) n++;
+    return `<div class="fav-head"><span class="fh-ico">${favGroupIcon(state.list[i])}</span><b>${esc(lbl)}</b><small>${fmt(n)}</small></div>`;
+  }
+  function updateFavTools() {
+    const on = state.group?.type === "special" && state.group.key === "fav";
+    $("fav-tools").classList.toggle("hidden", !on);
+    $("fav-group").value = state.favGroup;
+    $("sort").querySelector('[value="playlist"]').textContent = on ? "ترتيب الإضافة" : "ترتيب القائمة";
   }
 
   function groupTitle() {
@@ -481,9 +520,10 @@
     } else {
       const note = state.group?.type === "pick" && state.group.key === "sports" && !state.query
         ? `<div class="info-row">⚽ beIN SPORTS العربية قنوات مدفوعة ومشفّرة وما موجودة بالقوائم المجانية — الموجود هنا beIN SPORTS XTRA المجانية. إذا عندك اشتراك أضف رابطك من «القوائم ← إضافة قناة».</div>` : "";
-      box.innerHTML = note + state.list.slice(0, state.rendered).map(rowHTML).join("") + moreHint();
+      box.innerHTML = note + state.list.slice(0, state.rendered).map((c, i) => headerBefore(i) + rowHTML(c, i)).join("") + moreHint();
     }
     if (resetScroll) box.scrollTop = 0;
+    updateFavTools();
     renderGroupsCountsOnly();
   }
   const moreHint = () => (state.rendered < state.list.length ? `<div class="more-hint" id="more-hint">مرّر للأسفل لعرض المزيد…</div>` : "");
@@ -492,7 +532,7 @@
     const from = state.rendered;
     state.rendered = Math.min(state.rendered + PAGE, state.list.length);
     $("more-hint")?.remove();
-    $("ch-list").insertAdjacentHTML("beforeend", state.list.slice(from, state.rendered).map((c, j) => rowHTML(c, from + j)).join("") + moreHint());
+    $("ch-list").insertAdjacentHTML("beforeend", state.list.slice(from, state.rendered).map((c, j) => headerBefore(from + j) + rowHTML(c, from + j)).join("") + moreHint());
   }
   function renderGroupsCountsOnly() {
     $("cnt-fav").textContent = fmt(state.favorites.length);
@@ -847,6 +887,7 @@
 
   // keyboard (works with TV remotes / keyboards)
   document.addEventListener("keydown", (e) => {
+    if (document.documentElement.classList.contains("mode-cinema") && e.key !== "Escape") return;
     const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName) && document.activeElement.type !== "range" && document.activeElement.type !== "checkbox";
     if (e.key === "Escape") {
       if (!document.querySelector(".modal:not(.hidden)")) { if (typing) { document.activeElement.blur(); } }
@@ -907,7 +948,7 @@
     if (!isFav(ch.key)) { state.favorites.unshift(snapshot(ch)); save("favorites", state.favorites); }
     ["mine-name", "mine-url", "mine-logo"].forEach((id) => ($(id).value = ""));
     closeModals();
-    state.group = { type: "pick", key: "mine" }; clearSearch();
+    state.group = { type: "special", key: "fav" }; clearSearch();
     renderGroups(); renderList(true);
     toast(`➕ أُضيفت «${name}» إلى قنواتك والمفضلة`);
     play(ch);
@@ -1182,6 +1223,8 @@
   /* ---- Android back button ---- */
   let lastBack = 0;
   function handleBack() {
+    if (document.querySelector(".modal:not(.hidden)")) { closeModals(); return; }
+    if (window.IBRATV_cinemaBack && window.IBRATV_cinemaBack()) return;
     if (document.fullscreenElement) { document.exitFullscreen?.(); return; }
     if (document.querySelector(".modal:not(.hidden)")) { closeModals(); return; }
     if (document.querySelector(".groups.open")) { closeDrawer(); return; }
@@ -1193,6 +1236,18 @@
   }
   const capApp = window.Capacitor?.Plugins?.App;
   if (capApp?.addListener) capApp.addListener("backButton", handleBack);
+
+  $("fav-group").addEventListener("change", (e) => { state.favGroup = e.target.value; save("favGroup", state.favGroup); renderList(true); });
+  $("fav-clear").addEventListener("click", () => {
+    if (!state.favorites.length || !confirm("مسح كل القنوات من المفضلة؟")) return;
+    state.favorites = []; save("favorites", []); renderList(true); toast("تم مسح المفضلة");
+  });
+
+  /* ================= cinema hooks ================= */
+  window.IBRATV_toast = toast;
+  window.addEventListener("ibratv:mode", (e) => {
+    if (e.detail === "cinema") { try { video.pause(); } catch {} if (state.engine?.type === "youtube") destroyEngine(); }
+  });
 
   /* ================= themes — أشكال التطبيق ================= */
   const THEMES = [

@@ -1,6 +1,6 @@
 {
   "name": "ibratv",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "IBRATV — مشغل تلفزيون مباشر بواجهة زجاجية حمراء",
   "main": "electron/main.cjs",
   "author": "Ibrahim Al-Khazraji (IBRAPROGRAM)",
@@ -32,6 +32,8 @@
       "styles.css",
       "app.js",
       "android-bridge.js",
+      "adblock-hosts.txt",
+      "cinema.js",
       "logo.png",
       "logo-small.png",
       "icon.svg",
@@ -72,5 +74,8 @@
     "portable": {
       "artifactName": "${productName}-${version}-portable.${ext}"
     }
+  },
+  "dependencies": {
+    "@ghostery/adblocker-electron": "^2.20.3"
   }
 }

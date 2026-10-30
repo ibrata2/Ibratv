@@ -41,6 +41,11 @@ public class MainActivity extends BridgeActivity {
 
         nativeBridge = new IbraNative(this, wv);
         wv.addJavascriptInterface(nativeBridge, "IbraNative");
+        wv.addJavascriptInterface(new IbraCinema(this, wv), "IbraCinema");   // السينما
+        // JS interfaces only appear on page loads that start after they're added — reload once if the first load beat us
+        wv.postDelayed(() -> wv.evaluateJavascript("typeof window.IbraNative + typeof window.IbraCinema", v -> {
+            if (v != null && v.contains("undefined")) wv.reload();
+        }), 1200);
         getBridge().setWebViewClient(new IbraWebViewClient(getBridge(), nativeBridge));
 
         if (!"mobile".equals(BuildConfig.FLAVOR)) applyImmersive(true);

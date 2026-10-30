@@ -16,5 +16,6 @@ contextBridge.exposeInMainWorld("ibratvNative", {
   youtubeLive: (handle) => ipcRenderer.invoke("ibratv:youtube-live", handle),
   applyTheme: (mode) => ipcRenderer.invoke("ibratv:apply-theme", mode),
   onSystemStyle: (cb) => ipcRenderer.on("ibratv:system-style", (_e, st) => cb(st)),
+  onCinemaBlocked: (cb) => ipcRenderer.on("ibratv:cinema-blocked", (_e, n) => cb(n || 1)),
   onUpdateProgress: (cb) => ipcRenderer.on("ibratv:update-progress", (_e, p) => cb(p))
 });

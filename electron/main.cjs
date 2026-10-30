@@ -207,6 +207,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      webviewTag: true,            // السينما opens sites in a <webview>
       autoplayPolicy: "no-user-gesture-required",
       additionalArguments: [isWin11 ? "--ibratv-acrylic" : "--ibratv-solid"]
     }
@@ -224,8 +225,92 @@ function createWindow() {
   });
 }
 
+/* ================= السينما: isolated session, ad blocker, popup blocker ================= */
+const CINEMA_PARTITION = "persist:cinema";
+const CHROME_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36";
+let adHosts = null;
+function loadAdHosts() {
+  if (adHosts) return adHosts;
+  adHosts = new Set();
+  try {
+    fs.readFileSync(path.join(__dirname, "..", "adblock-hosts.txt"), "utf8").split(/\r?\n/)
+      .map((l) => l.trim().toLowerCase()).filter((l) => l && !l.startsWith("#")).forEach((h) => adHosts.add(h));
+  } catch {}
+  return adHosts;
+}
+function isAdHost(host) {
+  const set = loadAdHosts();
+  host = String(host || "").toLowerCase();
+  while (host) { if (set.has(host)) return true; const i = host.indexOf("."); if (i < 0) break; host = host.slice(i + 1); }
+  return false;
+}
+const hostOf = (u) => { try { return new URL(u).hostname; } catch { return ""; } };
+const siteOf = (h) => h.split(".").slice(-2).join(".");
+function notifyBlocked(contents, n = 1) {
+  try { (contents.hostWebContents || contents).send("ibratv:cinema-blocked", n); } catch {}
+}
+
+async function setupCinemaSession() {
+  const ses = session.fromPartition(CINEMA_PARTITION);
+  ses.setUserAgent(CHROME_UA);
+  ses.setPermissionRequestHandler((_wc, perm, cb) => cb(["fullscreen", "media", "clipboard-sanitized-write"].includes(perm)));
+  let usingGhostery = false;
+  try {
+    const { ElectronBlocker } = require("@ghostery/adblocker-electron");
+    const cache = path.join(app.getPath("userData"), "adblock-engine.bin");
+    const blocker = await ElectronBlocker.fromPrebuiltAdsAndTracking((url, opt) => net.fetch(url, opt), {
+      path: cache,
+      read: fs.promises.readFile,
+      write: fs.promises.writeFile
+    });
+    blocker.enableBlockingInSession(ses);
+    blocker.on("request-blocked", (req) => {
+      const wc = req.tabId != null ? require("electron").webContents.fromId(req.tabId) : null;
+      if (wc) notifyBlocked(wc);
+    });
+    usingGhostery = true;
+  } catch (err) {
+    console.warn("ghostery adblocker unavailable, using built-in list:", err && err.message);
+  }
+  if (!usingGhostery) {
+    ses.webRequest.onBeforeRequest((details, cb) => {
+      if (isAdHost(hostOf(details.url))) {
+        const wc = details.webContentsId != null ? require("electron").webContents.fromId(details.webContentsId) : null;
+        if (wc) notifyBlocked(wc);
+        return cb({ cancel: true });
+      }
+      cb({});
+    });
+  }
+}
+
+app.on("web-contents-created", (_e, contents) => {
+  // only our own page may embed a <webview>, always in the isolated cinema session
+  contents.on("will-attach-webview", (ev, webPreferences, params) => {
+    delete webPreferences.preload;
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
+    webPreferences.sandbox = true;
+    params.partition = CINEMA_PARTITION;
+    if (!/^https?:\/\//i.test(params.src || "")) ev.preventDefault();
+  });
+  if (contents.getType() !== "webview") return;
+  // pop-ups / pop-unders: blocked; a same-site link that opens a new tab loads in place
+  contents.setWindowOpenHandler(({ url, disposition }) => {
+    const cur = hostOf(contents.getURL());
+    const dst = hostOf(url);
+    if (dst && cur && siteOf(dst) === siteOf(cur) && disposition !== "new-window" && !isAdHost(dst)) contents.loadURL(url);
+    else notifyBlocked(contents);
+    return { action: "deny" };
+  });
+  // redirects to ad servers
+  contents.on("will-navigate", (ev, url) => { if (isAdHost(hostOf(url))) { ev.preventDefault(); notifyBlocked(contents); } });
+  contents.on("will-redirect", (ev, url) => { if (isAdHost(hostOf(url))) { ev.preventDefault(); notifyBlocked(contents); } });
+});
+
 app.whenReady().then(() => {
   installNetworkRules();
+  setupCinemaSession();
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

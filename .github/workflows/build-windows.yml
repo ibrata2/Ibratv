@@ -18,6 +18,8 @@ on:
       - "android/**"
       - "ios/**"
       - "android-bridge.js"
+      - "cinema.js"
+      - "adblock-hosts.txt"
       - "capacitor.config.json"
       - "scripts/**"
       - "CHANGELOG-latest.md"

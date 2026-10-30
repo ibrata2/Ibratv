@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#1a0509" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src * data: blob:; media-src * blob: data:; connect-src *; worker-src 'self' blob:; frame-src https://www.youtube.com https://www.youtube-nocookie.com;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src * data: blob:; media-src * blob: data:; connect-src *; worker-src 'self' blob:; frame-src *;" />
   <title>IBRATV</title>
   <link rel="icon" href="logo-small.png" type="image/png" />
   <link rel="stylesheet" href="styles.css" />
@@ -18,6 +18,11 @@
       <img src="logo-small.png" alt="IBRATV" class="brand-logo" />
       <div class="brand-text"><b>IBRA<span>TV</span></b><small>YOUR WORLD. YOUR TV.</small></div>
       <span class="dev-badge" id="dev-badge"></span>
+    </div>
+
+    <div class="mode-switch" role="tablist" aria-label="القسم">
+      <button data-mode="tv" class="on"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="m8 2 4 4 4-4"/></svg><span>القنوات التلفزيونية</span></button>
+      <button data-mode="cinema"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg><span>السينما</span></button>
     </div>
 
     <nav class="sources" id="quick-sources" aria-label="القوائم السريعة"></nav>
@@ -77,6 +82,17 @@
         </div>
         <label class="mini-toggle" title="إخفاء القنوات المحجوبة جغرافياً أو غير المستمرة"><input type="checkbox" id="hide-limited" /><span></span>إخفاء المحدودة</label>
       </div>
+      <div class="fav-tools hidden" id="fav-tools">
+        <span>★ ترتيب المفضلة:</span>
+        <select id="fav-group" title="تجميع المفضلة">
+          <option value="none">بدون تجميع</option>
+          <option value="country">حسب البلد</option>
+          <option value="category">حسب النوع</option>
+          <option value="quality">حسب الدقة</option>
+          <option value="letter">حسب الحرف</option>
+        </select>
+        <button class="btn ghost" id="fav-clear">مسح الكل</button>
+      </div>
       <div class="ch-list" id="ch-list" tabindex="0"></div>
     </section>
 
@@ -120,6 +136,42 @@
       </div>
     </section>
   </main>
+
+  <!-- ===== Cinema ===== -->
+  <section class="cinema hidden" id="cinema">
+    <div class="cine-home glass" id="cine-home">
+      <div class="cine-head">
+        <div class="cine-title"><h2>🎬 السينما</h2><span id="cine-count"></span></div>
+        <label class="search cine-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="cine-search" type="search" placeholder="ابحث عن موقع…" autocomplete="off" /></label>
+        <button class="btn ghost hidden" id="cine-restore">إرجاع المحذوفة</button>
+      </div>
+      <div class="cine-form hidden" id="cine-form">
+        <input id="cine-new-name" placeholder="اسم الموقع" />
+        <input id="cine-new-url" placeholder="https://…" dir="ltr" />
+        <button class="btn" id="cine-form-save">إضافة</button>
+        <button class="btn ghost" id="cine-form-cancel">إلغاء</button>
+      </div>
+      <div class="cine-grid" id="cine-grid"></div>
+      <p class="cine-note">🛡️ مانع الإعلانات والنوافذ المنبثقة يشتغل تلقائياً داخل كل موقع.</p>
+    </div>
+
+    <div class="cine-site hidden" id="cine-site">
+      <div class="cine-bar glass">
+        <button class="cbtn sm" id="cine-close" title="رجوع لقائمة المواقع"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10"/></svg></button>
+        <button class="cbtn sm" id="cine-back" title="الصفحة السابقة"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="cbtn sm" id="cine-forward" title="الصفحة التالية"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+        <button class="cbtn sm" id="cine-reload" title="تحديث"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>
+        <div class="cine-id">
+          <div class="cine-logo sm" id="cine-site-logo"></div>
+          <b id="cine-site-name">—</b>
+        </div>
+        <span class="cine-shield" id="cine-shield">🛡️</span>
+        <button class="cbtn sm" id="cine-external" title="فتح بالمتصفح"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>
+        <i class="cine-progress" id="cine-progress"></i>
+      </div>
+      <div class="cine-view" id="cine-view"></div>
+    </div>
+  </section>
 
   <footer class="statusbar">
     <span class="dot" id="status-dot"></span><span id="status-text">جاهز</span>
@@ -211,5 +263,6 @@
   <script src="vendor/dash.all.min.js"></script>
   <script src="android-bridge.js"></script>
   <script src="app.js"></script>
+  <script src="cinema.js"></script>
 </body>
 </html>
