@@ -6,7 +6,34 @@ const fs = require("node:fs");
 const os = require("node:os");
 const crypto = require("node:crypto");
 
-const isWin11 = process.platform === "win32" && Number((os.release().split(".")[2]) || 0) >= 22000;
+const isWin11Os = process.platform === "win32" && Number((os.release().split(".")[2]) || 0) >= 22000;
+
+/* ---------- start-up safety ----------
+   If the window never became visible last time (GPU driver / Acrylic trouble), or the GPU process
+   crashed, start in safe mode: no Acrylic and no hardware acceleration. */
+const SAFE_FILE = path.join(app.getPath("userData"), "startup-state.json");
+function readSafe() { try { return JSON.parse(fs.readFileSync(SAFE_FILE, "utf8")); } catch { return {}; } }
+function writeSafe(o) { try { fs.mkdirSync(path.dirname(SAFE_FILE), { recursive: true }); fs.writeFileSync(SAFE_FILE, JSON.stringify(o)); } catch {} }
+const safeState = readSafe();
+const SAFE_MODE = process.argv.includes("--safe-mode") || !!safeState.safeMode;
+if (SAFE_MODE) {
+  app.disableHardwareAcceleration();
+  writeSafe({ safeMode: true, lastLaunch: "starting" });
+} else {
+  writeSafe({ ...safeState, lastLaunch: "starting" });
+}
+const isWin11 = isWin11Os && !SAFE_MODE;
+
+// one IBRATV at a time: launching it again brings the existing window to the front
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) app.quit();
+app.on("second-instance", () => {
+  const w = BrowserWindow.getAllWindows()[0];
+  if (w) { if (w.isMinimized()) w.restore(); w.show(); w.focus(); }
+});
+app.on("child-process-gone", (_e, d) => {
+  if (d.type === "GPU" && d.reason !== "clean-exit") writeSafe({ safeMode: true, lastLaunch: "starting" });
+});
 const DEFAULT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36";
 
 // Headers a channel needs (from #EXTVLCOPT / http-user-agent / http-referrer)
@@ -188,6 +215,19 @@ function installNetworkRules() {
   });
 }
 
+// a window left on a disconnected monitor comes back to the main screen
+function keepOnScreen(win) {
+  try {
+    const { screen } = require("electron");
+    const b = win.getBounds();
+    const visible = screen.getAllDisplays().some((d) => {
+      const a = d.workArea;
+      return b.x < a.x + a.width - 100 && b.x + b.width > a.x + 100 && b.y < a.y + a.height - 100 && b.y + b.height > a.y;
+    });
+    if (!visible) win.center();
+  } catch {}
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1480,
@@ -213,7 +253,30 @@ function createWindow() {
     }
   });
 
-  win.once("ready-to-show", () => win.show());
+  // Normally the window appears on its first paint. If the page loaded but nothing ever painted
+  // (graphics driver / Acrylic problem — the app would run invisibly), restart once in safe mode.
+  let shown = false;
+  const reveal = () => {
+    if (shown || win.isDestroyed()) return;
+    shown = true;
+    keepOnScreen(win);
+    win.show();
+    win.focus();
+    writeSafe({ ...readSafe(), lastLaunch: "ok" });
+    if (process.env.IBRATV_DEBUG) console.log("IBRATV window shown, safeMode=" + SAFE_MODE);
+  };
+  win.once("ready-to-show", reveal);
+  win.webContents.once("did-finish-load", () => {
+    setTimeout(() => {
+      if (shown || win.isDestroyed()) return;
+      if (!SAFE_MODE) {
+        writeSafe({ safeMode: true, lastLaunch: "relaunch" });
+        app.relaunch({ args: process.argv.slice(1).concat("--safe-mode") });
+        app.exit(0);
+      } else reveal();
+    }, 4000);
+  });
+  setTimeout(() => { if (!shown && SAFE_MODE) reveal(); }, 8000);
   win.loadFile(path.join(__dirname, "..", "index.html"));
 
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -309,6 +372,7 @@ app.on("web-contents-created", (_e, contents) => {
 });
 
 app.whenReady().then(() => {
+  if (!gotLock) return;
   installNetworkRules();
   setupCinemaSession();
   createWindow();
