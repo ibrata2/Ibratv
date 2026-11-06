@@ -76,6 +76,8 @@
   const save = (k, v) => { try { localStorage.setItem(P + k, JSON.stringify(v)); } catch {} };
 
   const state = {
+    srcPos: load("srcPos", "band"),
+    srcView: load("srcView", "pills"),
     sourceId: (() => { const v = load("source", "iq"); return v === "picks" ? "iq" : v; })(),
     mine: load("mine", []),
     custom: load("custom", []),
@@ -322,12 +324,83 @@
     if (it.flag) return `<img src="${flagUrl(it.flag)}" alt="">`;
     return `<span>${esc(it.icon || "•")}</span>`;
   }
+  /* ---- source bar: place + look are user choices ---- */
+  const SRC_POS = [
+    { id: "band", name: "تحت الشريط العلوي", desc: "صف عريض لحاله تحت الأعلى" },
+    { id: "top", name: "داخل الشريط العلوي", desc: "جنب اللوجو مثل قبل" },
+    { id: "side", name: "شريط جانبي", desc: "عمود أيقونات على الجنب" },
+    { id: "list", name: "فوق قائمة القنوات", desc: "داخل لوحة القنوات" },
+    { id: "bottom", name: "بالأسفل", desc: "مثل تطبيقات الموبايل" }
+  ];
+  const SRC_VIEW = [
+    { id: "pills", name: "أزرار ملوّنة", desc: "أيقونة + اسم" },
+    { id: "cards", name: "بطاقات كبيرة", desc: "أيقونة كبيرة + اسم + وصف" },
+    { id: "tabs", name: "تبويبات", desc: "خط تحت القائمة المختارة" },
+    { id: "icons", name: "أيقونات فقط", desc: "أعلام وأيقونات، الاسم عند التأشير" },
+    { id: "menu", name: "قائمة منسدلة", desc: "زر واحد يفتح كل القوائم" }
+  ];
+  const SRC_DESC = { iq: "قنوات العراق", ara: "كل القنوات العربية", arab: "الوطن العربي", all: "+11,000 قناة", gcc: "دول الخليج", eng: "قنوات إنكليزية", mena: "الشرق الأوسط" };
+  const srcSub = (it) => SRC_DESC[it.id] || it.sub || (it.flag ? "قنوات " + it.name : it.name);
+  function srcPlace() {
+    let pos = state.srcPos;
+    if (pos === "side" && document.documentElement.classList.contains("dev-mobile")) pos = "bottom";
+    return pos;
+  }
+  function applySrcStyle() {
+    const root = document.documentElement, nav = $("quick-sources");
+    const pos = srcPlace();
+    root.dataset.srcpos = pos; root.dataset.srcview = state.srcView;
+    const box = { band: $("src-band"), side: $("src-rail"), list: $("src-inlist"), bottom: $("src-bottom") }[pos];
+    if (box) box.appendChild(nav);
+    else document.querySelector(".topbar").insertBefore(nav, document.querySelector(".top-tools"));
+    $("srcstyle-hint").textContent = `${SRC_POS.find((p) => p.id === state.srcPos).name} — ${SRC_VIEW.find((v) => v.id === state.srcView).name}`;
+    renderQuickSources();
+  }
   function renderQuickSources() {
     const ids = [...state.pins];
     if (!ids.includes(state.sourceId)) ids.push(state.sourceId);
-    $("quick-sources").innerHTML = ids.map(findSource).filter(Boolean)
-      .map((it) => `<button class="src ${it.id === state.sourceId ? "on" : ""}" data-source="${esc(it.id)}" title="${esc(it.sub || it.name)}">${srcIcon(it)}${esc(shortName(it))}</button>`).join("");
+    const items = ids.map(findSource).filter(Boolean);
+    const nav = $("quick-sources");
+    if (state.srcView === "menu") {
+      const cur = findSource(state.sourceId) || items[0];
+      nav.innerHTML = cur ? `<button class="src-menu-btn" id="src-menu-btn" aria-haspopup="true"><span class="sm-ico">${srcIcon(cur)}</span><span class="sm-txt"><small>القائمة</small><b>${esc(shortName(cur))}</b></span><span class="sm-car">▾</span></button>` : "";
+      $("src-pop").innerHTML = `<div class="pop-grid">` + items.map((it) => srcItem(it, "card")).join("") +
+        `<button class="src pop-more" data-open-library><span class="si-ico">＋</span><span class="si-txt"><b>كل القوائم</b><small>دول وأنواع أكثر</small></span></button></div>`;
+      return;
+    }
+    nav.innerHTML = items.map((it) => srcItem(it, state.srcView)).join("") +
+      `<button class="src src-more" data-open-library title="كل القوائم"><span class="si-ico">＋</span><span class="si-txt"><b>المزيد</b><small>كل القوائم</small></span></button>` +
+      `<button class="src src-style" data-open-srcstyle title="تغيير مكان وشكل هذا الشريط"><span class="si-ico">⚙</span></button>`;
   }
+  function srcItem(it, view) {
+    return `<button class="src ${view === "card" ? "card" : ""} ${it.id === state.sourceId ? "on" : ""}" data-source="${esc(it.id)}" title="${esc(shortName(it) + " — " + srcSub(it))}">` +
+      `<span class="si-ico">${srcIcon(it)}</span><span class="si-txt"><b>${esc(shortName(it))}</b><small>${esc(srcSub(it))}</small></span></button>`;
+  }
+  function openSrcPop() {
+    const pop = $("src-pop"), btn = $("src-menu-btn");
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    pop.classList.remove("hidden");
+    const w = Math.min(560, innerWidth - 20);
+    pop.style.width = w + "px";
+    pop.style.left = Math.max(10, Math.min(innerWidth - w - 10, r.right - w)) + "px";
+    const below = r.bottom + 8, h = pop.offsetHeight;
+    pop.style.top = (below + h > innerHeight - 10 ? Math.max(10, r.top - h - 8) : below) + "px";
+  }
+  const closeSrcPop = () => $("src-pop").classList.add("hidden");
+  function renderSrcPicker() {
+    const prev = (pos) => {
+      const bars = { band: `<rect x="4" y="16" width="152" height="12" rx="3" class="hl"/>`, top: `<rect x="40" y="5" width="80" height="8" rx="3" class="hl"/>`, side: `<rect x="142" y="18" width="14" height="78" rx="3" class="hl"/>`, list: `<rect x="100" y="20" width="56" height="9" rx="3" class="hl"/>`, bottom: `<rect x="20" y="84" width="120" height="12" rx="3" class="hl"/>` };
+      const main = { band: [4, 32, 152, 64], top: [4, 18, 152, 78], side: [4, 18, 134, 78], list: [4, 18, 152, 78], bottom: [4, 18, 152, 62] }[pos];
+      return `<svg viewBox="0 0 160 100"><rect x="4" y="4" width="152" height="10" rx="3" class="bar"/><rect x="${main[0]}" y="${main[1]}" width="${main[2]}" height="${main[3]}" rx="5" class="panel"/>${bars[pos]}</svg>`;
+    };
+    $("srcpos-grid").innerHTML = SRC_POS.map((p) => `<button class="pick-opt ${state.srcPos === p.id ? "on" : ""}" data-pick-pos="${p.id}">${prev(p.id)}<b>${p.name}</b><small>${p.desc}</small></button>`).join("");
+    const sample = ["iq", "ara", "all"].map(findSource).filter(Boolean);
+    $("srcview-grid").innerHTML = SRC_VIEW.map((v) => `<button class="pick-opt ${state.srcView === v.id ? "on" : ""}" data-pick-view="${v.id}"><div class="view-demo" data-demo="${v.id}">${v.id === "menu"
+      ? `<span class="src-menu-btn"><span class="sm-ico">${srcIcon(sample[0])}</span><span class="sm-txt"><small>القائمة</small><b>العراق</b></span><span class="sm-car">▾</span></span>`
+      : sample.map((it, i) => `<span class="src ${i === 0 ? "on" : ""}"><span class="si-ico">${srcIcon(it)}</span><span class="si-txt"><b>${esc(shortName(it))}</b><small>${esc(srcSub(it))}</small></span></span>`).join("")}</div><b>${v.name}</b><small>${v.desc}</small></button>`).join("");
+  }
+  const openSrcStyle = () => { closeModals(); closeSrcPop(); renderSrcPicker(); $("srcstyle").classList.remove("hidden"); };
   const shortName = (it) => ({ iq: "العراق", ara: "العربية", arab: "الوطن العربي", all: "العالم", gcc: "الخليج" }[it.id] || it.name);
 
   function renderLibrary() {
@@ -1384,6 +1457,21 @@
   });
   $("sort").addEventListener("change", markFilters);
 
+  /* ---- source bar events ---- */
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("#src-menu-btn")) { $("src-pop").classList.contains("hidden") ? openSrcPop() : closeSrcPop(); return; }
+    if (!e.target.closest("#src-pop")) closeSrcPop(); else if (e.target.closest("[data-source]")) closeSrcPop();
+    if (e.target.closest("[data-open-library]")) { closeSrcPop(); renderLibrary(); closeModals(); $("library").classList.remove("hidden"); return; }
+    if (e.target.closest("[data-open-srcstyle]")) { openSrcStyle(); return; }
+    const sp = e.target.closest("[data-pick-pos]");
+    if (sp) { state.srcPos = sp.dataset.pickPos; save("srcPos", state.srcPos); applySrcStyle(); renderSrcPicker(); return; }
+    const sv = e.target.closest("[data-pick-view]");
+    if (sv) { state.srcView = sv.dataset.pickView; save("srcView", state.srcView); applySrcStyle(); renderSrcPicker(); }
+  });
+  addEventListener("resize", closeSrcPop);
+  $("settings-srcstyle").addEventListener("click", openSrcStyle);
+  $("srcstyle-lib").addEventListener("click", () => { closeModals(); renderLibrary(); $("library").classList.remove("hidden"); });
+
   /* ================= cinema hooks ================= */
   window.IBRATV_toast = toast;
   window.addEventListener("ibratv:mode", (e) => {
@@ -1451,8 +1539,10 @@
 
   /* ================= start ================= */
   applyLayout(state.layout);
+  applySrcStyle();
   markFilters();
   if (!load("layoutPicked", false)) { save("layoutPicked", true); setTimeout(openLayouts, 1400); }
+  else if (!load("srcPicked", false)) { save("srcPicked", true); setTimeout(openSrcStyle, 1400); }
   save("v21", true); save("pins", state.pins);
   if (native) document.body.classList.add("desktop");
   if (native?.acrylic) document.body.classList.add("acrylic");

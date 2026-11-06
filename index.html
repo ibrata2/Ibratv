@@ -43,6 +43,10 @@
     </div>
   </header>
 
+  <!-- places the source bar (العراق / العربية / العالم …) can live in -->
+  <div class="src-band" id="src-band"></div>
+  <aside class="src-rail glass" id="src-rail"></aside>
+
   <!-- ===== Main layout ===== -->
   <main class="layout">
     <!-- Groups -->
@@ -64,6 +68,7 @@
 
     <!-- Channels -->
     <section class="panel channels glass">
+      <div class="src-inlist" id="src-inlist"></div>
       <div class="ch-head">
         <button class="tbtn icon groups-btn" id="groups-toggle" title="الأقسام"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
         <div class="ch-title"><h2 id="list-title">القنوات</h2><span id="list-count">—</span></div>
@@ -184,6 +189,9 @@
     </div>
   </section>
 
+  <div class="src-bottom" id="src-bottom"></div>
+  <div class="src-pop glass hidden" id="src-pop"></div>
+
   <footer class="statusbar">
     <span class="dot" id="status-dot"></span><span id="status-text">جاهز</span>
     <span class="sep"></span><span id="source-label">—</span>
@@ -239,6 +247,21 @@
     </div>
   </div>
 
+  <!-- ===== Source bar picker ===== -->
+  <div class="modal hidden" id="srcstyle">
+    <div class="sheet glass">
+      <div class="sheet-head"><div><h2>شريط القوائم</h2><small class="sheet-sub">العراق، العربية، الوطن العربي، العالم… — اختر مكانه وشكله، ويتغيّر فوراً</small></div><button class="x" data-close>×</button></div>
+      <div class="sheet-body">
+        <h4 class="pick-title">١ — المكان</h4>
+        <div class="srcpos-grid" id="srcpos-grid"></div>
+        <h4 class="pick-title">٢ — طريقة العرض</h4>
+        <div class="srcview-grid" id="srcview-grid"></div>
+        <div class="pick-row"><span>القوائم الظاهرة بالشريط تختارها من «القوائم» بنجمة ★</span><button class="btn ghost" id="srcstyle-lib">تعديل القوائم</button></div>
+      </div>
+      <div class="sheet-foot"><button class="btn" data-close>تم</button></div>
+    </div>
+  </div>
+
   <!-- ===== Settings modal ===== -->
   <div class="modal hidden" id="settings">
     <div class="sheet small glass">
@@ -252,6 +275,7 @@
           <button class="theme-opt" data-theme-opt="clear"><i></i>زجاجي شفاف</button>
           <button class="theme-opt" data-theme-opt="system"><i></i>حسب ستايل الجهاز</button>
         </div>
+        <div class="set-row"><div><b>شريط القوائم</b><small id="srcstyle-hint">—</small></div><button class="btn ghost" id="settings-srcstyle">تغيير</button></div>
         <div class="set-row"><div><b>طريقة عرض القنوات</b><small id="layout-hint">—</small></div><button class="btn ghost" id="settings-layouts">تغيير</button></div>
         <div class="set-row"><div><b>شفافية الزجاج</b><small>درجة شفافية الواجهة الحمراء</small></div><input type="range" id="glass-level" min="0.25" max="0.9" step="0.05" /></div>
         <div class="set-row"><div><b>تشغيل آخر قناة عند الفتح</b><small>يكمل من حيث توقفت</small></div><label class="switch"><input type="checkbox" id="resume-last" /><span></span></label></div>
