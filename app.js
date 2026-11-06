@@ -397,11 +397,30 @@
       html = entries.map(([k, n]) => item(k, n)).join("");
     }
     $("group-list").innerHTML = html || `<div class="empty" style="padding:20px">لا توجد مجموعات</div>`;
+    fillQuickNav();
     document.querySelectorAll("[data-special]").forEach((b) => b.classList.toggle("on", state.group?.type === "special" && state.group.key === b.dataset.special));
     document.querySelectorAll("[data-groupby]").forEach((b) => b.classList.toggle("on", b.dataset.groupby === state.groupBy));
     $("cnt-all").textContent = fmt(state.channels.length);
     $("cnt-fav").textContent = fmt(state.favorites.length);
     $("cnt-recent").textContent = fmt(state.recent.length);
+  }
+
+  function groupLabelOf(k, dim) {
+    if (dim === "country") return countryName(k === "--" ? "" : k);
+    if (dim === "category") return CAT[k] ? CAT[k][0] : k;
+    return k === "#" ? "أرقام ورموز" : `حرف ${k}`;
+  }
+  function fillQuickNav() {
+    const cur = state.group?.type === "special" ? "s:" + state.group.key : state.group ? "g:" + state.group.key : "s:all";
+    const groups = [...$("group-list").querySelectorAll("[data-group]")].map((b) => [b.dataset.group, b.querySelector(".gname").textContent, b.querySelector("b").textContent]);
+    $("quick-group").innerHTML =
+      `<option value="s:all">▦ كل القنوات (${fmt(state.channels.length)})</option>` +
+      `<option value="s:fav">★ المفضلة (${fmt(state.favorites.length)})</option>` +
+      `<option value="s:recent">◷ شاهدتها مؤخراً (${fmt(state.recent.length)})</option>` +
+      `<optgroup label="${state.groupBy === "country" ? "الدول" : state.groupBy === "category" ? "الأنواع" : "الحروف"}">` +
+      groups.map(([k, n, c]) => `<option value="g:${esc(k)}">${esc(n)} (${c})</option>`).join("") + `</optgroup>`;
+    $("quick-group").value = cur;
+    $("quick-groupby").value = state.groupBy;
   }
 
   /* ================= channel list ================= */
@@ -520,11 +539,42 @@
     } else {
       const note = state.group?.type === "pick" && state.group.key === "sports" && !state.query
         ? `<div class="info-row">⚽ beIN SPORTS العربية قنوات مدفوعة ومشفّرة وما موجودة بالقوائم المجانية — الموجود هنا beIN SPORTS XTRA المجانية. إذا عندك اشتراك أضف رابطك من «القوائم ← إضافة قناة».</div>` : "";
-      box.innerHTML = note + state.list.slice(0, state.rendered).map((c, i) => headerBefore(i) + rowHTML(c, i)).join("") + moreHint();
+      const asRows = CHSTYLE() === "rows" && renderRows(box);
+      box.classList.toggle("has-rows", !!asRows);
+      if (asRows) { /* rendered as rows */ }
+      else box.innerHTML = note + (CHSTYLE() === "table" ? TABLE_HEAD : "") + state.list.slice(0, state.rendered).map((c, i) => headerBefore(i) + rowHTML(c, i)).join("") + moreHint();
     }
     if (resetScroll) box.scrollTop = 0;
     updateFavTools();
     renderGroupsCountsOnly();
+  }
+  const CHSTYLE = () => document.documentElement.dataset.chstyle || "list";
+  const TABLE_HEAD = `<div class="tbl-head"><span>#</span><span></span><span>القناة</span><span>البلد · النوع</span><span>الدقة</span><span>★</span></div>`;
+  // «صفوف»: one horizontal row per section (country / type / letter), like TV apps
+  function renderRows(box) {
+    const dim = state.groupBy;
+    const keyOf = (ch) => groupKeysOf(ch)[0];
+    const buckets = new Map();
+    for (const ch of state.list) { const k = keyOf(ch); if (!buckets.has(k)) buckets.set(k, []); buckets.get(k).push(ch); }
+    if (buckets.size < 2) return false;            // one section only → plain tiles
+    let keys = [...buckets.keys()];
+    if (dim === "country") keys.sort((a, b) => (a === "iq" ? -1 : b === "iq" ? 1 : 0) || (ARAB.includes(b) - ARAB.includes(a)) || buckets.get(b).length - buckets.get(a).length);
+    else keys.sort((a, b) => (a === "undefined") - (b === "undefined") || buckets.get(b).length - buckets.get(a).length);
+    keys = keys.slice(0, 40);
+    state.list = keys.flatMap((k) => buckets.get(k));
+    state.rendered = state.list.length;
+    const CAP = 24;
+    let i = 0, html = "";
+    for (const k of keys) {
+      const arr = buckets.get(k);
+      const ico = dim === "country" ? (k === "--" ? "🏳️" : `<img src="${flagUrl(k)}" alt="">`) : dim === "category" ? (CAT[k] ? CAT[k][1] : "📺") : "";
+      html += `<div class="row-group"><div class="row-title"><span class="fh-ico">${ico}</span><b>${esc(groupLabelOf(k, dim))}</b><small>${fmt(arr.length)}</small>` +
+        (arr.length > CAP ? `<button class="row-all" data-showgroup="${esc(k)}">عرض الكل ←</button>` : "") + `</div><div class="row-scroll">`;
+      arr.forEach((c, j) => { if (j < CAP) html += rowHTML(c, i); i++; });
+      html += `</div></div>`;
+    }
+    box.innerHTML = html;
+    return true;
   }
   const moreHint = () => (state.rendered < state.list.length ? `<div class="more-hint" id="more-hint">مرّر للأسفل لعرض المزيد…</div>` : "");
   function renderMore() {
@@ -614,6 +664,7 @@
 
   async function play(ch, { osd = true } = {}) {
     if (!ch) return;
+    if (state.layout === "big") document.documentElement.classList.add("watching");
     state.current = ch;
     destroyEngine();
     $("screen-idle").classList.add("hidden");
@@ -890,7 +941,7 @@
     if (document.documentElement.classList.contains("mode-cinema") && e.key !== "Escape") return;
     const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName) && document.activeElement.type !== "range" && document.activeElement.type !== "checkbox";
     if (e.key === "Escape") {
-      if (!document.querySelector(".modal:not(.hidden)")) { if (typing) { document.activeElement.blur(); } }
+      if (!document.querySelector(".modal:not(.hidden)")) { if (typing) { document.activeElement.blur(); } else if (!document.fullscreenElement && window.IBRATV_exitWatching?.()) return; }
       closeModals(); return;
     }
     if (typing) {
@@ -1224,6 +1275,7 @@
   let lastBack = 0;
   function handleBack() {
     if (document.querySelector(".modal:not(.hidden)")) { closeModals(); return; }
+    if (!document.fullscreenElement && window.IBRATV_exitWatching && window.IBRATV_exitWatching()) return;
     if (window.IBRATV_cinemaBack && window.IBRATV_cinemaBack()) return;
     if (document.fullscreenElement) { document.exitFullscreen?.(); return; }
     if (document.querySelector(".modal:not(.hidden)")) { closeModals(); return; }
@@ -1242,6 +1294,95 @@
     if (!state.favorites.length || !confirm("مسح كل القنوات من المفضلة؟")) return;
     state.favorites = []; save("favorites", []); renderList(true); toast("تم مسح المفضلة");
   });
+
+  /* ================= طريقة العرض — 10 layouts ================= */
+  // shape: rectangles in a 160×100 preview [x, y, w, h, kind]  (p player, l list, s sections, t tiles, r rows, g table, d dense, b big tiles)
+  const LAYOUTS = [
+    { id: "simple", name: "بسيط", desc: "قائمة كبيرة واضحة والمشغّل جنبها", style: "list", side: false, shape: [[98, 4, 58, 92, "l"], [4, 4, 90, 92, "p"]] },
+    { id: "logos", name: "شبكة لوجوهات", desc: "لوجوهات القنوات مربعات كبيرة", style: "tiles", side: false, shape: [[64, 4, 92, 92, "t"], [4, 4, 56, 92, "p"]] },
+    { id: "rows", name: "صفوف مثل التلفزيون", desc: "كل دولة أو نوع بصف لحاله، والمشغّل فوق", style: "rows", side: false, shape: [[4, 4, 152, 44, "p"], [4, 52, 152, 13, "r"], [4, 68, 152, 13, "r"], [4, 84, 152, 12, "r"]] },
+    { id: "full", name: "ملء الشاشة", desc: "البث يملأ الشاشة والقنوات شريط بالأسفل", style: "strip", side: false, shape: [[4, 4, 152, 92, "p"], [12, 70, 136, 20, "r"]] },
+    { id: "big", name: "كبير وسهل", desc: "مربعات كبيرة — تختار وتشاهد بملء الشاشة", style: "bigtiles", side: false, shape: [[4, 4, 152, 92, "b"]] },
+    { id: "top", name: "المشغّل فوق", desc: "شاشة عريضة فوق والقنوات مربعات تحت", style: "tiles", side: false, shape: [[4, 4, 152, 50, "p"], [4, 58, 152, 38, "t"]] },
+    { id: "side", name: "شريط جانبي", desc: "شاشة كبيرة وقائمة نحيفة بالجنب", style: "slim", side: false, shape: [[122, 4, 34, 92, "d"], [4, 4, 114, 92, "p"]] },
+    { id: "guide", name: "جدول القنوات", desc: "جدول فيه البلد والنوع والدقة", style: "table", side: false, shape: [[58, 4, 98, 92, "g"], [4, 4, 50, 92, "p"]] },
+    { id: "classic", name: "كلاسيك", desc: "الأقسام + القائمة + المشغّل (الشكل القديم)", style: "list", side: true, shape: [[124, 4, 32, 92, "s"], [74, 4, 46, 92, "l"], [4, 4, 66, 92, "p"]] },
+    { id: "compact", name: "مضغوط", desc: "قنوات كثيرة بنفس الشاشة، أسطر صغيرة", style: "compact", side: true, shape: [[128, 4, 28, 92, "s"], [86, 4, 38, 92, "d"], [4, 4, 78, 92, "p"]] }
+  ];
+  function layoutSVG(shape) {
+    const fill = { p: "var(--lp-player)", s: "var(--lp-side)" };
+    let out = `<svg viewBox="0 0 160 100" aria-hidden="true">`;
+    for (const [x, y, w, h, k] of shape) {
+      out += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${fill[k] || "var(--lp-panel)"}" stroke="var(--lp-line)"/>`;
+      if (k === "p") out += `<path d="M${x + w / 2 - 6} ${y + h / 2 - 8} l14 8 -14 8z" fill="#fff" opacity=".9"/>`;
+      if (k === "l" || k === "d" || k === "s") { const step = k === "d" ? 7 : k === "s" ? 10 : 11; for (let yy = y + 8; yy < y + h - 4; yy += step) out += `<rect x="${x + 5}" y="${yy}" width="${w - 10}" height="${k === "d" ? 3 : 5}" rx="2" fill="var(--lp-line)"/>`; }
+      if (k === "t" || k === "b") { const n = k === "b" ? 3 : Math.max(3, Math.round(w / 22)), g = 4, cw = (w - g * (n + 1)) / n, rows = Math.max(1, Math.floor((h - g) / (cw + g))); for (let r = 0; r < rows; r++) for (let c = 0; c < n; c++) out += `<rect x="${x + g + c * (cw + g)}" y="${y + g + r * (cw + g)}" width="${cw}" height="${cw}" rx="3" fill="var(--lp-line)"/>`; }
+      if (k === "r") { for (let c = 0; c < 8; c++) out += `<rect x="${x + 3 + c * 19}" y="${y + 2}" width="16" height="${h - 4}" rx="2" fill="var(--lp-line)"/>`; }
+      if (k === "g") { for (let yy = y + 6; yy < y + h - 4; yy += 9) { out += `<rect x="${x + 5}" y="${yy}" width="${w * .35}" height="4" rx="2" fill="var(--lp-line)"/><rect x="${x + w * .45}" y="${yy}" width="${w * .3}" height="4" rx="2" fill="var(--lp-line)" opacity=".6"/><rect x="${x + w * .82}" y="${yy}" width="${w * .12}" height="4" rx="2" fill="var(--lp-accent)"/>`; } }
+    }
+    return out + `</svg>`;
+  }
+  function renderLayoutPicker() {
+    $("layout-grid").innerHTML = LAYOUTS.map((l, i) => `
+      <button class="layout-opt ${state.layout === l.id ? "on" : ""}" data-layout="${l.id}">
+        <span class="lo-num">${(i + 1).toLocaleString("ar-IQ")}</span>${layoutSVG(l.shape)}
+        <b>${l.name}</b><small>${l.desc}</small>
+      </button>`).join("");
+  }
+  function applyLayout(id, announce) {
+    const L = LAYOUTS.find((l) => l.id === id) || LAYOUTS[0];
+    state.layout = L.id; save("layout", L.id);
+    const root = document.documentElement;
+    root.dataset.layout = L.id;
+    root.dataset.chstyle = L.style;
+    root.classList.toggle("no-side", !L.side);
+    root.classList.remove("watching");
+    $("layout-hint").textContent = L.name;
+    document.querySelectorAll(".layout-opt").forEach((b) => b.classList.toggle("on", b.dataset.layout === L.id));
+    renderList(false);
+    if (announce) toast(`▦ ${L.name}`);
+  }
+  state.layout = load("layout", "simple");
+  $("layout-grid").addEventListener("click", (e) => { const b = e.target.closest(".layout-opt"); if (b) applyLayout(b.dataset.layout, true); });
+  const openLayouts = () => { renderLayoutPicker(); closeModals(); $("layouts").classList.remove("hidden"); setTimeout(() => document.querySelector(".layout-opt.on")?.focus(), 50); };
+  $("open-layouts").addEventListener("click", openLayouts);
+  $("settings-layouts").addEventListener("click", openLayouts);
+
+  // «كبير وسهل»: choose from the big grid → watch on the whole screen → back to the grid
+  function exitWatching() { document.documentElement.classList.remove("watching"); setTimeout(() => document.querySelector(".ch.playing")?.scrollIntoView({ block: "center" }), 30); }
+  $("watch-back").addEventListener("click", exitWatching);
+  window.IBRATV_exitWatching = () => { if (!document.documentElement.classList.contains("watching")) return false; exitWatching(); return true; };
+
+  // «ملء الشاشة»: the channel strip hides itself while you watch, and comes back on mouse / touch / key
+  let stripTimer;
+  function pokeStrip() {
+    const root = document.documentElement;
+    root.classList.add("strip-show");
+    clearTimeout(stripTimer);
+    stripTimer = setTimeout(() => { if (state.current && !video.paused && !root.querySelector(".channels:hover, .channels:focus-within")) root.classList.remove("strip-show"); }, 3500);
+  }
+  ["mousemove", "touchstart", "keydown", "wheel"].forEach((ev) => document.addEventListener(ev, () => { if (state.layout === "full") pokeStrip(); }, { passive: true }));
+
+  // quick section / sort-by selectors (instead of the sidebar)
+  $("quick-group").addEventListener("change", (e) => {
+    const [t, k] = [e.target.value.slice(0, 1), e.target.value.slice(2)];
+    state.group = t === "s" ? { type: "special", key: k } : { type: state.groupBy, key: k };
+    clearSearch(); renderGroups(); renderList(true);
+  });
+  $("quick-groupby").addEventListener("change", (e) => {
+    state.groupBy = e.target.value; save("groupBy", state.groupBy);
+    if (state.group?.type !== "special") state.group = { type: "special", key: "all" };
+    renderGroups(); renderList(true);
+  });
+  // filters are folded away until you ask for them
+  $("filters-toggle").addEventListener("click", () => document.documentElement.classList.toggle("filters-open"));
+  function markFilters() { $("filters-toggle").classList.toggle("active", state.res !== "all" || state.hideLimited || state.sort !== "name"); }
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-res], #hide-limited")) setTimeout(markFilters, 0);
+    const sg = e.target.closest("[data-showgroup]");
+    if (sg) { state.group = { type: state.groupBy, key: sg.dataset.showgroup }; renderGroups(); renderList(true); }
+  });
+  $("sort").addEventListener("change", markFilters);
 
   /* ================= cinema hooks ================= */
   window.IBRATV_toast = toast;
@@ -1309,6 +1450,9 @@
   applyTheme(state.settings.theme);
 
   /* ================= start ================= */
+  applyLayout(state.layout);
+  markFilters();
+  if (!load("layoutPicked", false)) { save("layoutPicked", true); setTimeout(openLayouts, 1400); }
   save("v21", true); save("pins", state.pins);
   if (native) document.body.classList.add("desktop");
   if (native?.acrylic) document.body.classList.add("acrylic");
