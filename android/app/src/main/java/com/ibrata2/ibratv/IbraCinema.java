@@ -107,6 +107,13 @@ public class IbraCinema {
         });
     }
 
+    /** load another page in the open site, keeping its back history (used by the search box) */
+    @JavascriptInterface
+    public void navigate(String url) {
+        if (url == null || !(url.startsWith("http://") || url.startsWith("https://"))) return;
+        activity.runOnUiThread(() -> { if (web != null) { web.loadUrl(url); web.requestFocus(); } });
+    }
+
     @JavascriptInterface
     public void setBounds(double x, double y, double w, double h) {
         activity.runOnUiThread(() -> { if (web != null) place(x, y, w, h); });

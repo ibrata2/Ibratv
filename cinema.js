@@ -16,6 +16,8 @@
   /* ================= sites ================= */
   // the user's list first, then legal / official platforms
   const DEFAULT_SITES = [
+    { id: "notv", name: "No TV — مسلسلات وأفلام", url: "https://www.dailymotion.com/user/No_tv", desc: "قناة مسلسلات وأفلام على Dailymotion", logo: "https://www.google.com/s2/favicons?domain=dailymotion.com&sz=128", search: "https://www.dailymotion.com/search/{q}/videos" },
+    { id: "dailymotion", name: "Dailymotion", url: "https://www.dailymotion.com/", desc: "فيديوهات ومسلسلات وأفلام", search: "https://www.dailymotion.com/search/{q}/videos" },
     { id: "cinemana", name: "سينمانا", url: "https://cinemana.shabakaty.com/home", desc: "أفلام ومسلسلات — شبكتي" },
     { id: "shahid", name: "شاهد", url: "https://shahid.mbc.net/ar", desc: "MBC — مسلسلات وبرامج عربية" },
     { id: "egybest", name: "إيجي بست", url: "https://www.egybest.co.in/", desc: "أفلام ومسلسلات" },
@@ -35,7 +37,7 @@
     { id: "pluto", name: "Pluto TV", url: "https://pluto.tv/", desc: "قنوات وأفلام مجانية رسمية" },
     { id: "viki", name: "Rakuten Viki", url: "https://www.viki.com/", desc: "دراما كورية وآسيوية مترجمة" },
     { id: "crunchyroll", name: "Crunchyroll", url: "https://www.crunchyroll.com/ar", desc: "أنمي مترجم" },
-    { id: "archive", name: "أرشيف الأفلام", url: "https://archive.org/details/feature_films", desc: "أفلام كلاسيكية مجانية — Internet Archive" }
+    { id: "archive", name: "أرشيف الأفلام", url: "https://archive.org/details/feature_films", desc: "أفلام كلاسيكية مجانية — Internet Archive", search: "https://archive.org/search?query={q}&and[]=mediatype%3A%22movies%22" }
   ];
   const state = {
     custom: load("custom", []),
@@ -47,6 +49,16 @@
     blocked: 0,
     query: ""
   };
+  // sites added before this version keep their search templates from the defaults
+  const KNOWN_SEARCH = { "plex.tv": "https://watch.plex.tv/search?q={q}", "crunchyroll.com": "https://www.crunchyroll.com/search?q={q}", "viki.com": "https://www.viki.com/search?q={q}", "dailymotion.com": "https://www.dailymotion.com/search/{q}/videos", "youtube.com": "https://www.youtube.com/results?search_query={q}" };
+  function searchUrl(s, q) {
+    const host = hostOf(s.url);
+    const site = host.split(".").slice(-2).join(".");
+    const t = s.search || KNOWN_SEARCH[site];
+    if (t) return t.replace("{q}", encodeURIComponent(q));
+    // any other site: Google search limited to that site, results open inside the app
+    return `https://www.google.com/search?q=${encodeURIComponent("site:" + host + " " + q)}`;
+  }
   const sites = () => DEFAULT_SITES.filter((s) => !state.hidden.includes(s.id)).concat(state.custom);
   const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; } };
   const logoUrl = (s) => s.logo || `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostOf(s.url))}&sz=128`;
@@ -110,6 +122,7 @@
           try { wv.loadURL(url); } catch {}
           onState({ blocked: 0, loading: true });
         },
+        go(url) { if (wv) { try { wv.loadURL(url); } catch { wv.setAttribute("src", url); } onState({ loading: true }); } },
         back() { if (wv && wv.canGoBack()) { wv.goBack(); return true; } return false; },
         forward() { if (wv && wv.canGoForward()) wv.goForward(); },
         reload() { wv && wv.reload(); },
@@ -121,6 +134,7 @@
       const N = window.IbraCinema;
       return {
         open(url) { const r = viewRect(); N.open(url, r.x, r.y, r.w, r.h); },
+        go(url) { if (N.navigate) N.navigate(url); else { const r = viewRect(); N.open(url, r.x, r.y, r.w, r.h); } },
         back() { return !!N.back(); },
         forward() { N.forward(); },
         reload() { N.reload(); },
@@ -136,6 +150,7 @@
       P.addListener("state", (st) => { if (typeof st.canBack === "boolean") canBack = st.canBack; });
       return {
         open(url) { const r = viewRect(); P.open({ url, x: r.x, y: r.y, w: r.w, h: r.h }); },
+        go(url) { const r = viewRect(); P.open({ url, x: r.x, y: r.y, w: r.w, h: r.h }); },
         back() { if (canBack) { P.back(); return true; } return false; },
         forward() { P.forward(); },
         reload() { P.reload(); },
@@ -161,6 +176,7 @@
           fr.src = url;
           onState({ loading: true });
         },
+        go(url) { if (fr) { fr.src = url; onState({ loading: true }); } },
         back() { return false; }, forward() {}, reload() { if (fr) fr.src = fr.src; },
         close() { if (fr) { fr.remove(); fr = null; } }, setVisible() {}, bounds() {}
       };
@@ -205,6 +221,8 @@
   }
 
   function openSite(s) {
+    $("cine-q").value = "";
+    $("cine-q").placeholder = `ابحث داخل ${s.name.split(" — ")[0]}…`;
     state.site = s; state.blocked = 0; state.canBack = false; state.loading = true;
     $("cine-home").classList.add("hidden");
     $("cine-site").classList.remove("hidden");
@@ -285,6 +303,15 @@
   $("cine-back").addEventListener("click", () => { if (!engine.back()) closeSite(); });
   $("cine-forward").addEventListener("click", () => engine.forward());
   $("cine-reload").addEventListener("click", () => engine.reload());
+  function siteSearch() {
+    const q = $("cine-q").value.trim();
+    if (!q || !state.site) return;
+    engine.go(searchUrl(state.site, q));
+    $("cine-q").blur();
+    syncOverlay();
+  }
+  $("cine-q").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); siteSearch(); } e.stopPropagation(); });
+  $("cine-q-go").addEventListener("click", siteSearch);
   $("cine-external").addEventListener("click", () => {
     if (!state.site) return;
     if (native?.openExternal) native.openExternal(state.site.url); else window.open(state.site.url, "_blank", "noopener");
