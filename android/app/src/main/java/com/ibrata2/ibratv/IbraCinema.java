@@ -45,6 +45,8 @@ public class IbraCinema {
     private volatile boolean canBack = false;
     private volatile boolean loading = false;
     private volatile int blocked = 0;
+    private volatile boolean adblock = true;          // per site, set from the app before open()
+    private boolean viewAdblock = true;               // mode the current WebView was built with
     private int lastOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 
     static final String AD_CSS =
@@ -93,10 +95,15 @@ public class IbraCinema {
     }
 
     /* ---------------- JS API (window.IbraCinema) ---------------- */
+    /** turn the ad blocker on/off for the next open(); the WebView is rebuilt when the mode changes */
+    @JavascriptInterface
+    public void setAdblock(boolean on) { adblock = on; }
+
     @JavascriptInterface
     public void open(String url, double x, double y, double w, double h) {
         if (url == null || !(url.startsWith("http://") || url.startsWith("https://"))) return;
         activity.runOnUiThread(() -> {
+            if (web != null && viewAdblock != adblock) destroyView();
             ensureView();
             place(x, y, w, h);
             web.setVisibility(View.VISIBLE);
@@ -143,16 +150,19 @@ public class IbraCinema {
     public void close() {
         activity.runOnUiThread(() -> {
             hideCustomView();
-            if (web != null) {
-                web.stopLoading();
-                web.loadUrl("about:blank");
-                ((ViewGroup) web.getParent()).removeView(web);
-                web.destroy();
-                web = null;
-            }
+            destroyView();
             canBack = false;
             appView.requestFocus();
         });
+    }
+
+    private void destroyView() {
+        if (web == null) return;
+        web.stopLoading();
+        web.loadUrl("about:blank");
+        ((ViewGroup) web.getParent()).removeView(web);
+        web.destroy();
+        web = null;
     }
 
     /* ---------------- internals ---------------- */
@@ -173,6 +183,8 @@ public class IbraCinema {
     @SuppressLint("SetJavaScriptEnabled")
     private void ensureView() {
         if (web != null) return;
+        viewAdblock = adblock;
+        final boolean blocking = adblock;
         web = new WebView(activity);
         web.setBackgroundColor(Color.WHITE);
         WebSettings s = web.getSettings();
@@ -194,14 +206,14 @@ public class IbraCinema {
         web.setFocusable(true);
         web.setFocusableInTouchMode(true);
 
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+        if (blocking && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
             try { WebViewCompat.addDocumentStartJavaScript(web, SHIELD_JS, Collections.singleton("*")); } catch (Exception ignored) {}
         }
 
         web.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
-                if (isAd(req.getUrl().getHost())) {
+                if (blocking && isAd(req.getUrl().getHost())) {
                     blocked++;
                     return new WebResourceResponse("text/plain", "utf-8", 204, "Blocked", new HashMap<>(), new ByteArrayInputStream(new byte[0]));
                 }
@@ -211,14 +223,14 @@ public class IbraCinema {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
                 Uri u = req.getUrl();
                 String sc = u.getScheme() == null ? "" : u.getScheme();
-                if (isAd(u.getHost())) { blocked++; emit(); return true; }
+                if (blocking && isAd(u.getHost())) { blocked++; emit(); return true; }
                 if (!sc.equals("http") && !sc.equals("https")) return true;   // intent://, market:// … stay inside
                 return false;
             }
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) { loading = true; emit(); }
             @Override public void onPageFinished(WebView view, String url) {
                 loading = false;
-                if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) view.evaluateJavascript(SHIELD_JS, null);
+                if (blocking && !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) view.evaluateJavascript(SHIELD_JS, null);
                 emit();
             }
             @Override public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) { emit(); }
@@ -232,7 +244,7 @@ public class IbraCinema {
                 String target = hit != null ? hit.getExtra() : null;
                 if (isUserGesture && target != null) {
                     String th = Uri.parse(target).getHost(), ch = Uri.parse(String.valueOf(view.getUrl())).getHost();
-                    if (th != null && site(th).equals(site(ch)) && !isAd(th)) { view.loadUrl(target); return false; }
+                    if (th != null && site(th).equals(site(ch)) && !(blocking && isAd(th))) { view.loadUrl(target); return false; }
                 }
                 blocked++; emit();
                 return false;

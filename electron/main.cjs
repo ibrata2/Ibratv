@@ -290,6 +290,7 @@ function createWindow() {
 
 /* ================= السينما: isolated session, ad blocker, popup blocker ================= */
 const CINEMA_PARTITION = "persist:cinema";
+const CINEMA_OPEN_PARTITION = "persist:cinema-open";   // same cinema, ad blocker off (sites that refuse ad blockers)
 const CHROME_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36";
 let adHosts = null;
 function loadAdHosts() {
@@ -312,6 +313,13 @@ const siteOf = (h) => h.split(".").slice(-2).join(".");
 function notifyBlocked(contents, n = 1) {
   try { (contents.hostWebContents || contents).send("ibratv:cinema-blocked", n); } catch {}
 }
+
+function setupOpenCinemaSession() {
+  const ses = session.fromPartition(CINEMA_OPEN_PARTITION);
+  ses.setUserAgent(CHROME_UA);
+  ses.setPermissionRequestHandler((_wc, perm, cb) => cb(["fullscreen", "media", "clipboard-sanitized-write"].includes(perm)));
+}
+const isOpenSession = (contents) => { try { return contents.session === session.fromPartition(CINEMA_OPEN_PARTITION); } catch { return false; } };
 
 async function setupCinemaSession() {
   const ses = session.fromPartition(CINEMA_PARTITION);
@@ -354,7 +362,7 @@ app.on("web-contents-created", (_e, contents) => {
     webPreferences.nodeIntegration = false;
     webPreferences.contextIsolation = true;
     webPreferences.sandbox = true;
-    params.partition = CINEMA_PARTITION;
+    params.partition = params.partition === CINEMA_OPEN_PARTITION ? CINEMA_OPEN_PARTITION : CINEMA_PARTITION;
     if (!/^https?:\/\//i.test(params.src || "")) ev.preventDefault();
   });
   if (contents.getType() !== "webview") return;
@@ -362,19 +370,21 @@ app.on("web-contents-created", (_e, contents) => {
   contents.setWindowOpenHandler(({ url, disposition }) => {
     const cur = hostOf(contents.getURL());
     const dst = hostOf(url);
+    if (isOpenSession(contents)) { if (dst && cur && siteOf(dst) === siteOf(cur)) contents.loadURL(url); else if (/^https?:/i.test(url)) shell.openExternal(url); return { action: "deny" }; }
     if (dst && cur && siteOf(dst) === siteOf(cur) && disposition !== "new-window" && !isAdHost(dst)) contents.loadURL(url);
     else notifyBlocked(contents);
     return { action: "deny" };
   });
   // redirects to ad servers
-  contents.on("will-navigate", (ev, url) => { if (isAdHost(hostOf(url))) { ev.preventDefault(); notifyBlocked(contents); } });
-  contents.on("will-redirect", (ev, url) => { if (isAdHost(hostOf(url))) { ev.preventDefault(); notifyBlocked(contents); } });
+  contents.on("will-navigate", (ev, url) => { if (!isOpenSession(contents) && isAdHost(hostOf(url))) { ev.preventDefault(); notifyBlocked(contents); } });
+  contents.on("will-redirect", (ev, url) => { if (!isOpenSession(contents) && isAdHost(hostOf(url))) { ev.preventDefault(); notifyBlocked(contents); } });
 });
 
 app.whenReady().then(() => {
   if (!gotLock) return;
   installNetworkRules();
   setupCinemaSession();
+  setupOpenCinemaSession();
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

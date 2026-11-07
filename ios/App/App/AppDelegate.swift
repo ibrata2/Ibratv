@@ -74,6 +74,8 @@ public class CinemaPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDelegate, WK
     private var rules: WKContentRuleList?
     private var adHosts = Set<String>()
     private var blocked = 0
+    private var adblock = true          // requested for the next open
+    private var viewAdblock = true      // mode the current WKWebView was built with
     private var observers: [NSKeyValueObservation] = []
 
     static let adSelectors = "ins.adsbygoogle, [id^='google_ads'], [id^='div-gpt-ad'], iframe[src*='doubleclick'], iframe[src*='googlesyndication'], [class*='popunder'], [id*='popunder'], [class*='ad-banner'], [id*='ad-banner'], [class*='advertis'], [id*='advertis'], div[data-ad-slot], amp-ad"
@@ -127,14 +129,18 @@ public class CinemaPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDelegate, WK
     }
 
     private func ensureView(_ done: @escaping (WKWebView) -> Void) {
-        if let w = web { done(w); return }
+        if let w = web, viewAdblock == adblock { done(w); return }
+        if let w = web { observers = []; w.stopLoading(); w.removeFromSuperview(); web = nil }
+        let blocking = adblock
         compileRules {
             let cfg = WKWebViewConfiguration()
             cfg.allowsInlineMediaPlayback = true
             cfg.mediaTypesRequiringUserActionForPlayback = []
             cfg.allowsPictureInPictureMediaPlayback = true
-            if let r = self.rules { cfg.userContentController.add(r) }
-            cfg.userContentController.addUserScript(WKUserScript(source: CinemaPlugin.shieldJS, injectionTime: .atDocumentStart, forMainFrameOnly: false))
+            if blocking {
+                if let r = self.rules { cfg.userContentController.add(r) }
+                cfg.userContentController.addUserScript(WKUserScript(source: CinemaPlugin.shieldJS, injectionTime: .atDocumentStart, forMainFrameOnly: false))
+            }
             let w = WKWebView(frame: .zero, configuration: cfg)
             w.navigationDelegate = self
             w.uiDelegate = self
@@ -147,6 +153,7 @@ public class CinemaPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDelegate, WK
             ]
             if let host = self.bridge?.webView, let sup = host.superview { sup.addSubview(w) }
             self.web = w
+            self.viewAdblock = blocking
             done(w)
         }
     }
@@ -158,6 +165,7 @@ public class CinemaPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDelegate, WK
 
     @objc func open(_ call: CAPPluginCall) {
         guard let s = call.getString("url"), let url = URL(string: s) else { call.reject("bad url"); return }
+        adblock = call.getBool("adblock") ?? true
         DispatchQueue.main.async {
             let frame = self.frameFor(call)
             self.ensureView { w in
@@ -203,7 +211,7 @@ public class CinemaPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDelegate, WK
     // pop-ups: a same-site link opens in place, anything else is blocked
     public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         let dst = navigationAction.request.url?.host
-        if navigationAction.navigationType == .linkActivated, site(dst) == site(webView.url?.host), !isAd(dst) {
+        if navigationAction.navigationType == .linkActivated, site(dst) == site(webView.url?.host), !(viewAdblock && isAd(dst)) {
             webView.load(navigationAction.request)
         } else {
             blocked += 1
@@ -215,7 +223,7 @@ public class CinemaPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDelegate, WK
     public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         let url = navigationAction.request.url
         let scheme = url?.scheme?.lowercased() ?? ""
-        if isAd(url?.host) { blocked += 1; emit(); decisionHandler(.cancel); return }
+        if viewAdblock && isAd(url?.host) { blocked += 1; emit(); decisionHandler(.cancel); return }
         if scheme != "http" && scheme != "https" && scheme != "about" && scheme != "blob" && scheme != "data" { decisionHandler(.cancel); return }
         decisionHandler(.allow)
     }

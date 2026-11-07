@@ -16,8 +16,8 @@
   /* ================= sites ================= */
   // the user's list first, then legal / official platforms
   const DEFAULT_SITES = [
-    { id: "notv", name: "No TV — مسلسلات وأفلام", url: "https://www.dailymotion.com/user/No_tv", desc: "قناة مسلسلات وأفلام على Dailymotion", logo: "https://www.google.com/s2/favicons?domain=dailymotion.com&sz=128", search: "https://www.dailymotion.com/search/{q}/videos" },
-    { id: "dailymotion", name: "Dailymotion", url: "https://www.dailymotion.com/", desc: "فيديوهات ومسلسلات وأفلام", search: "https://www.dailymotion.com/search/{q}/videos" },
+    { id: "notv", adblock: false, name: "No TV — مسلسلات وأفلام", url: "https://www.dailymotion.com/user/No_tv", desc: "قناة مسلسلات وأفلام على Dailymotion", logo: "https://www.google.com/s2/favicons?domain=dailymotion.com&sz=128", search: "https://www.dailymotion.com/search/{q}/videos" },
+    { id: "dailymotion", adblock: false, name: "Dailymotion", url: "https://www.dailymotion.com/", desc: "فيديوهات ومسلسلات وأفلام", search: "https://www.dailymotion.com/search/{q}/videos" },
     { id: "cinemana", name: "سينمانا", url: "https://cinemana.shabakaty.com/home", desc: "أفلام ومسلسلات — شبكتي" },
     { id: "shahid", name: "شاهد", url: "https://shahid.mbc.net/ar", desc: "MBC — مسلسلات وبرامج عربية" },
     { id: "egybest", name: "إيجي بست", url: "https://www.egybest.co.in/", desc: "أفلام ومسلسلات" },
@@ -59,6 +59,9 @@
     // any other site: Google search limited to that site, results open inside the app
     return `https://www.google.com/search?q=${encodeURIComponent("site:" + host + " " + q)}`;
   }
+  // ad blocker per site: the user's choice wins, otherwise the site's default (on)
+  state.adPref = load("adPref", {});
+  const adOn = (s) => (s.id in state.adPref ? state.adPref[s.id] : s.adblock !== false);
   const sites = () => DEFAULT_SITES.filter((s) => !state.hidden.includes(s.id)).concat(state.custom);
   const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; } };
   const logoUrl = (s) => s.logo || `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostOf(s.url))}&sz=128`;
@@ -100,14 +103,16 @@
 
   const engines = {
     electron() {
-      let wv = null, blocked = 0;
+      let wv = null, blocked = 0, wvMode = null;
       native.onCinemaBlocked?.((n) => { blocked += n; onState({ blocked }); });
       return {
-        open(url) {
+        open(url, blocking = true) {
           blocked = 0;
+          if (wv && wvMode !== blocking) { try { wv.stop(); } catch {} wv.remove(); wv = null; }
           if (!wv) {
+            wvMode = blocking;
             wv = document.createElement("webview");
-            wv.setAttribute("partition", "persist:cinema");
+            wv.setAttribute("partition", blocking ? "persist:cinema" : "persist:cinema-open");
             wv.setAttribute("webpreferences", "contextIsolation=yes, nativeWindowOpen=yes");
             wv.className = "cine-webview";
             $("cine-view").appendChild(wv);
@@ -133,7 +138,7 @@
     android() {
       const N = window.IbraCinema;
       return {
-        open(url) { const r = viewRect(); N.open(url, r.x, r.y, r.w, r.h); },
+        open(url, blocking = true) { if (N.setAdblock) N.setAdblock(!!blocking); const r = viewRect(); N.open(url, r.x, r.y, r.w, r.h); },
         go(url) { if (N.navigate) N.navigate(url); else { const r = viewRect(); N.open(url, r.x, r.y, r.w, r.h); } },
         back() { return !!N.back(); },
         forward() { N.forward(); },
@@ -146,11 +151,11 @@
     ios() {
       const P = CAP.registerPlugin("Cinema");
       P.addListener("state", (st) => onState(st));
-      let canBack = false;
+      let canBack = false, mode = true;
       P.addListener("state", (st) => { if (typeof st.canBack === "boolean") canBack = st.canBack; });
       return {
-        open(url) { const r = viewRect(); P.open({ url, x: r.x, y: r.y, w: r.w, h: r.h }); },
-        go(url) { const r = viewRect(); P.open({ url, x: r.x, y: r.y, w: r.w, h: r.h }); },
+        open(url, blocking = true) { mode = !!blocking; const r = viewRect(); P.open({ url, adblock: mode, x: r.x, y: r.y, w: r.w, h: r.h }); },
+        go(url) { const r = viewRect(); P.open({ url, adblock: mode, x: r.x, y: r.y, w: r.w, h: r.h }); },
         back() { if (canBack) { P.back(); return true; } return false; },
         forward() { P.forward(); },
         reload() { P.reload(); },
@@ -216,8 +221,10 @@
     lg.innerHTML = `<img src="${esc(logoUrl(s))}" alt="" referrerpolicy="no-referrer">`;
     $("cine-progress").classList.toggle("on", state.loading);
     $("cine-back").disabled = !state.canBack && !NATIVE_OVERLAY;
-    $("cine-shield").textContent = state.blocked ? `🛡️ ${state.blocked.toLocaleString("ar-IQ")}` : "🛡️";
-    $("cine-shield").title = state.blocked ? `تم حظر ${state.blocked} إعلان/نافذة منبثقة` : "مانع الإعلانات يعمل";
+    const on = adOn(s);
+    $("cine-shield").classList.toggle("off", !on);
+    $("cine-shield").innerHTML = on ? `🛡️ <span>مانع الإعلانات${state.blocked ? " · " + state.blocked.toLocaleString("ar-IQ") : ""}</span>` : `<s>🛡️</s> <span>المانع متوقف</span>`;
+    $("cine-shield").title = on ? "مانع الإعلانات يعمل — اضغط لإيقافه لهذا الموقع (إذا الموقع رفض يشتغل)" : "مانع الإعلانات متوقف لهذا الموقع — اضغط لتشغيله";
   }
 
   function openSite(s) {
@@ -228,7 +235,7 @@
     $("cine-site").classList.remove("hidden");
     renderBar();
     save("last", s.id);
-    requestAnimationFrame(() => requestAnimationFrame(() => { engine.open(s.url); syncOverlay(); }));
+    requestAnimationFrame(() => requestAnimationFrame(() => { engine.open(s.url, adOn(s)); syncOverlay(); }));
     if (window.ibratvNative?.setStreamHeaders) { /* TV headers don't apply to the cinema session */ }
   }
   function closeSite() {
@@ -312,6 +319,17 @@
   }
   $("cine-q").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); siteSearch(); } e.stopPropagation(); });
   $("cine-q-go").addEventListener("click", siteSearch);
+  // ad blocker on/off for the open site — remembered per site, page reloads in the new mode
+  $("cine-shield").addEventListener("click", () => {
+    const s = state.site;
+    if (!s) return;
+    const on = !adOn(s);
+    state.adPref[s.id] = on; save("adPref", state.adPref);
+    state.blocked = 0;
+    toast(on ? `🛡️ تشغيل مانع الإعلانات لـ «${s.name}»` : `أُوقف مانع الإعلانات لـ «${s.name}» — يتذكّر اختيارك لهذا الموقع`);
+    engine.open(s.url, on);
+    renderBar(); syncOverlay();
+  });
   $("cine-external").addEventListener("click", () => {
     if (!state.site) return;
     if (native?.openExternal) native.openExternal(state.site.url); else window.open(state.site.url, "_blank", "noopener");

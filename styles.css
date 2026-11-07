@@ -1014,3 +1014,11 @@ html.dev-mobile .srcpos-grid, html.dev-mobile .srcview-grid { grid-template-colu
 .cine-q-go svg { width: 18px; }
 html.dev-mobile .cine-bar { flex-wrap: wrap; }
 html.dev-mobile .cine-search-in { order: 10; flex: 1 1 100%; height: 36px; }
+
+/* ad blocker switch in the cinema bar */
+button.cine-shield { cursor: pointer; display: inline-flex; align-items: center; gap: 5px; height: 34px; }
+button.cine-shield:hover { border-color: var(--acc-border); }
+button.cine-shield.off { background: rgba(255, 179, 107, .14); border-color: rgba(255, 179, 107, .5); color: #ffb36b; }
+button.cine-shield s { text-decoration: line-through; opacity: .7; }
+html.dev-mobile .cine-shield { display: inline-flex !important; }
+html.dev-mobile .cine-shield span { display: none; }
