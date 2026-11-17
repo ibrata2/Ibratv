@@ -3,7 +3,7 @@
 <p align="center"><img src="logo.png" width="180" alt="IBRATV"></p>
 
 **مشغّل تلفزيون مباشر بواجهة زجاجية حمراء شفافة — للويندوز والأندرويد (موبايل، سيارة، تلفزيون) والآيفون.**
-برمجة و تطوير **ابراهيم الخزرجي** — تليكرام: [t.me/ibraprogram](https://t.me/ibraprogram)
+برمجة و تطوير **ابراهيم الخزرجي** — تطبيقاتنا: [ibraprogram.netlify.app](https://ibraprogram.netlify.app/) — تليكرام: [t.me/ibraprogram](https://t.me/ibraprogram) — تيك توك: ibraprogram
 
 ## المميزات
 
