@@ -31,6 +31,7 @@
   --gold: #ffd166;
   /* theme tokens (default: زجاجي أحمر وأسود) */
   --acc-rgb: 255, 46, 74;
+  --ibra-accent: var(--red);
   --acc2-rgb: 255, 110, 128;
   --acc-hi: #ff4560;
   --acc-lo: #b80c29;
@@ -1030,3 +1031,8 @@ html.dev-mobile .cine-shield span { display: none; }
 .now-logo.brandish img { border-radius: 0; object-fit: contain; }
 .now-logo.brandish { background: none; box-shadow: none; overflow: visible; }
 .now-logo.brandish img { max-width: 100%; max-height: 100%; filter: drop-shadow(0 3px 10px rgba(255, 30, 60, .4)); }
+
+/* IBRA STORE slider (Windows only) — sits over the idle screen */
+.screen-idle { background-color: #050102; color: #fff; }
+#ibra-store-slider { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+#ibra-store-slider > * { pointer-events: auto; }
