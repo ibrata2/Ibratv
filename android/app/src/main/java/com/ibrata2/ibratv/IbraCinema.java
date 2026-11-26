@@ -187,6 +187,10 @@ public class IbraCinema {
         final boolean blocking = adblock;
         web = new WebView(activity);
         web.setBackgroundColor(Color.WHITE);
+        // no long-press menus (keeps the site links private)
+        web.setLongClickable(false);
+        web.setOnLongClickListener(v -> true);
+        web.setHapticFeedbackEnabled(false);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);

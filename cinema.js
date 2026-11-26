@@ -15,11 +15,12 @@
 
   /* ================= sites ================= */
   // the user's list first, then legal / official platforms
+  const _u = (x) => { try { return atob(x.split("").reverse().join("")); } catch { return ""; } };
   const DEFAULT_SITES = [
+    { id: "ibratv-qi", hidden: true, name: "ابرا تي في — Qi TV", url: _u("2R3LwBXYu4Wamx2b39yL6MHc0RHa"), desc: "أفلام ومسلسلات وقنوات مباشرة", logo: "logo-small.png", noSearch: true },
     { id: "layl-banafsaj", adblock: false, name: "ليل البنفسج", url: "https://www.dailymotion.com/search/%D9%84%D9%8A%D9%84%20%D8%A7%D9%84%D8%A8%D9%86%D9%81%D8%B3%D8%AC/top-results", desc: "مسلسل ليل البنفسج — بحث على Dailymotion", logo: "https://www.google.com/s2/favicons?domain=dailymotion.com&sz=128", search: "https://www.dailymotion.com/search/{q}/top-results" },
     { id: "layl-banafsaj-2", adblock: false, name: "ليل البنفسج — الجزء الثاني", url: "https://www.dailymotion.com/search/%D9%84%D9%8A%D9%84%20%D8%A7%D9%84%D8%A8%D9%86%D9%81%D8%B3%D8%AC%20%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A/top-results", desc: "مسلسل ليل البنفسج الجزء الثاني — بحث على Dailymotion", logo: "https://www.google.com/s2/favicons?domain=dailymotion.com&sz=128", search: "https://www.dailymotion.com/search/{q}/top-results" },
     { id: "dailymotion", adblock: false, name: "Dailymotion", url: "https://www.dailymotion.com/", desc: "فيديوهات ومسلسلات وأفلام", search: "https://www.dailymotion.com/search/{q}/videos" },
-    { id: "iraqtube", name: "IraqTube — مسلسلات", url: "https://iraq-tube.lovable.app/series", desc: "منصة فيديو عراقية — مسلسلات وأفلام مجاناً" },
     { id: "cinemana", name: "سينمانا", url: "https://cinemana.shabakaty.com/home", desc: "أفلام ومسلسلات — شبكتي" },
     { id: "shahid", name: "شاهد", url: "https://shahid.mbc.net/ar", desc: "MBC — مسلسلات وبرامج عربية" },
     { id: "egybest", name: "إيجي بست", url: "https://www.egybest.co.in/", desc: "أفلام ومسلسلات" },
@@ -195,11 +196,11 @@
   /* ================= UI ================= */
   function renderGrid() {
     const q = state.query.trim().toLowerCase();
-    const list = sites().filter((s) => !q || (s.name + " " + s.url + " " + (s.desc || "")).toLowerCase().includes(q));
+    const list = sites().filter((s) => !q || (s.name + " " + (s.hidden ? "" : s.url) + " " + (s.desc || "")).toLowerCase().includes(q));
     $("cine-grid").innerHTML = list.map((s) => `
       <div class="cine-card" data-site="${esc(s.id)}" tabindex="0" role="button" title="${esc(s.name)}">
         <div class="cine-logo" data-ini="${esc(initials(s.name))}"><img src="${esc(logoUrl(s))}" alt="" loading="lazy" referrerpolicy="no-referrer"></div>
-        <div class="cine-txt"><b>${esc(s.name)}</b><small>${esc(s.desc || hostOf(s.url))}</small></div>
+        <div class="cine-txt"><b>${esc(s.name)}</b><small>${esc(s.desc || (s.hidden ? "" : hostOf(s.url)))}</small></div>
         <button class="cine-del" data-del-site="${esc(s.id)}" title="حذف من القائمة" tabindex="-1">×</button>
       </div>`).join("") + `
       <div class="cine-card add" id="cine-add-card" tabindex="0" role="button"><div class="cine-logo plus">＋</div><div class="cine-txt"><b>إضافة موقع</b><small>أي موقع أفلام أو مسلسلات</small></div></div>`;
@@ -221,6 +222,8 @@
     lg.dataset.ini = initials(s.name);
     lg.classList.remove("ph");
     lg.innerHTML = `<img src="${esc(logoUrl(s))}" alt="" referrerpolicy="no-referrer">`;
+    $("cine-external").classList.toggle("hidden", !!s.hidden);
+    $("cine-search-in").classList.toggle("hidden", !!(s.hidden || s.noSearch));
     $("cine-progress").classList.toggle("on", state.loading);
     $("cine-back").disabled = !state.canBack && !NATIVE_OVERLAY;
     const on = adOn(s);
@@ -333,7 +336,7 @@
     renderBar(); syncOverlay();
   });
   $("cine-external").addEventListener("click", () => {
-    if (!state.site) return;
+    if (!state.site || state.site.hidden) return;
     if (native?.openExternal) native.openExternal(state.site.url); else window.open(state.site.url, "_blank", "noopener");
   });
 

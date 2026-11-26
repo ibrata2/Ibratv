@@ -145,6 +145,7 @@ public class CinemaPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDelegate, WK
             w.navigationDelegate = self
             w.uiDelegate = self
             w.allowsBackForwardNavigationGestures = true
+            w.allowsLinkPreview = false   // no link previews / share sheet with the URL
             w.backgroundColor = .white
             w.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
             self.observers = [

@@ -1,6 +1,8 @@
 // IBRATV — Electron main process
 // برمجة و تطوير ابراهيم الخزرجي
-const { app, BrowserWindow, shell, ipcMain, net, session, nativeTheme, systemPreferences } = require("electron");
+const { app, BrowserWindow, shell, ipcMain, net, session, nativeTheme, systemPreferences, Menu } = require("electron");
+// release builds: no menu → no developer tools (keeps Cinema links private)
+if (app.isPackaged) { try { Menu.setApplicationMenu(null); } catch {} }
 const path = require("node:path");
 const fs = require("node:fs");
 const os = require("node:os");
