@@ -1,6 +1,6 @@
 {
   "name": "ibratv",
-  "version": "2.7.5",
+  "version": "2.7.6",
   "description": "IBRATV — مشغل تلفزيون مباشر بواجهة زجاجية حمراء",
   "main": "electron/main.cjs",
   "author": "Ibrahim Al-Khazraji (IBRAPROGRAM)",

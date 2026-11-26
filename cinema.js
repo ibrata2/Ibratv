@@ -18,6 +18,7 @@
   const DEFAULT_SITES = [
     { id: "notv", adblock: false, name: "No TV — مسلسلات وأفلام", url: "https://www.dailymotion.com/user/No_tv", desc: "قناة مسلسلات وأفلام على Dailymotion", logo: "https://www.google.com/s2/favicons?domain=dailymotion.com&sz=128", search: "https://www.dailymotion.com/search/{q}/videos" },
     { id: "dailymotion", adblock: false, name: "Dailymotion", url: "https://www.dailymotion.com/", desc: "فيديوهات ومسلسلات وأفلام", search: "https://www.dailymotion.com/search/{q}/videos" },
+    { id: "iraqtube", name: "IraqTube — مسلسلات", url: "https://iraq-tube.lovable.app/series", desc: "منصة فيديو عراقية — مسلسلات وأفلام مجاناً" },
     { id: "cinemana", name: "سينمانا", url: "https://cinemana.shabakaty.com/home", desc: "أفلام ومسلسلات — شبكتي" },
     { id: "shahid", name: "شاهد", url: "https://shahid.mbc.net/ar", desc: "MBC — مسلسلات وبرامج عربية" },
     { id: "egybest", name: "إيجي بست", url: "https://www.egybest.co.in/", desc: "أفلام ومسلسلات" },
