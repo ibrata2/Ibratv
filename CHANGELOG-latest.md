@@ -1,3 +1,3 @@
-IBRATV 2.7.6
-- قسم السينما: إضافة IraqTube (مسلسلات وأفلام عراقية مجانية) ينفتح مباشرة على صفحة المسلسلات
+IBRATV 2.7.7
+- قسم السينما: شلنا قناة No TV، وبمكانها «ليل البنفسج» يفتح بحث المسلسل على Dailymotion مباشرة
 برمجة و تطوير ابراهيم الخزرجي — https://ibraprogram.netlify.app/ — https://t.me/ibraprogram — تيك توك: ibraprogram

@@ -16,7 +16,7 @@
   /* ================= sites ================= */
   // the user's list first, then legal / official platforms
   const DEFAULT_SITES = [
-    { id: "notv", adblock: false, name: "No TV — مسلسلات وأفلام", url: "https://www.dailymotion.com/user/No_tv", desc: "قناة مسلسلات وأفلام على Dailymotion", logo: "https://www.google.com/s2/favicons?domain=dailymotion.com&sz=128", search: "https://www.dailymotion.com/search/{q}/videos" },
+    { id: "layl-banafsaj", adblock: false, name: "ليل البنفسج", url: "https://www.dailymotion.com/search/%D9%84%D9%8A%D9%84%20%D8%A7%D9%84%D8%A8%D9%86%D9%81%D8%B3%D8%AC/top-results", desc: "مسلسل ليل البنفسج — بحث على Dailymotion", logo: "https://www.google.com/s2/favicons?domain=dailymotion.com&sz=128", search: "https://www.dailymotion.com/search/{q}/top-results" },
     { id: "dailymotion", adblock: false, name: "Dailymotion", url: "https://www.dailymotion.com/", desc: "فيديوهات ومسلسلات وأفلام", search: "https://www.dailymotion.com/search/{q}/videos" },
     { id: "iraqtube", name: "IraqTube — مسلسلات", url: "https://iraq-tube.lovable.app/series", desc: "منصة فيديو عراقية — مسلسلات وأفلام مجاناً" },
     { id: "cinemana", name: "سينمانا", url: "https://cinemana.shabakaty.com/home", desc: "أفلام ومسلسلات — شبكتي" },
